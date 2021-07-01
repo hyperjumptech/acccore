@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/olekukonko/tablewriter"
+	"github.com/sirupsen/logrus"
 	"sort"
 	"strings"
 	"time"
 )
 
 // RECORD and TABLE simulations.
+// InMemoryJournalRecords is simulating records in Journal table
 type InMemoryJournalRecords struct {
 	journalId         string
 	journalingTime    time.Time
@@ -21,6 +23,7 @@ type InMemoryJournalRecords struct {
 	createBy          string
 }
 
+// InMemoryAccountRecord is simulating records in Account table
 type InMemoryAccountRecord struct {
 	currency            string
 	id                  string
@@ -35,6 +38,7 @@ type InMemoryAccountRecord struct {
 	updateBy            string
 }
 
+// InMemoryAccountRecord is simulating records in Transaction table
 type InMemoryTransactionRecords struct {
 	transactionId   string
 	transactionTime time.Time
@@ -49,8 +53,13 @@ type InMemoryTransactionRecords struct {
 }
 
 var (
-	InMemoryJournalTable     map[string]*InMemoryJournalRecords
-	InMemoryAccountTable     map[string]*InMemoryAccountRecord
+	// InMemoryJournalTable the simulated Journal table
+	InMemoryJournalTable map[string]*InMemoryJournalRecords
+
+	// InMemoryAccountTable the simulated Account table
+	InMemoryAccountTable map[string]*InMemoryAccountRecord
+
+	// InMemoryTransactionTable the simulated Transaction table
 	InMemoryTransactionTable map[string]*InMemoryTransactionRecords
 )
 
@@ -60,6 +69,7 @@ func init() {
 	InMemoryTransactionTable = make(map[string]*InMemoryTransactionRecords, 0)
 }
 
+// InMemoryJournalManager implementation of JournalManager using inmemory Journal table map
 type InMemoryJournalManager struct {
 }
 
@@ -85,12 +95,15 @@ func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error
 		return ErrJournalNil
 	}
 	if len(journalToPersist.GetJournalID()) == 0 {
+		logrus.Errorf("error persisting journal. journal is missing the journalID")
 		return ErrJournalMissingId
 	}
 	if len(journalToPersist.GetTransactions()) == 0 {
+		logrus.Errorf("error persisting journal %s. journal contains no transactions.", journalToPersist.GetJournalID())
 		return ErrJournalNoTransaction
 	}
 	if len(journalToPersist.GetCreateBy()) == 0 {
+		logrus.Errorf("error persisting journal %s. journal author not known.", journalToPersist.GetJournalID())
 		return ErrJournalMissingAuthor
 	}
 
@@ -98,19 +111,22 @@ func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error
 	//    SQL HINT : SELECT COUNT(*) FROM JOURNAL WHERE JOURNAL.ID = {journalToPersist.GetJournalID()}
 	//    If COUNT(*) is > 0 return error
 	if _, exist := InMemoryJournalTable[journalToPersist.GetJournalID()]; exist == true {
+		logrus.Errorf("error persisting journal %s. journal already exist.", journalToPersist.GetJournalID())
 		return ErrJournalAlreadyPersisted
 	}
 
 	// 3. Make sure all journal transactions are IDed.
-	for _, trx := range journalToPersist.GetTransactions() {
+	for idx, trx := range journalToPersist.GetTransactions() {
 		if len(trx.GetTransactionID()) == 0 {
+			logrus.Errorf("error persisting journal %s. transaction %d is missing transactionID.", journalToPersist.GetJournalID(), idx)
 			return ErrJournalTransactionMissingID
 		}
 	}
 
 	// 4. Make sure all journal transactions are not persisted.
-	for _, trx := range journalToPersist.GetTransactions() {
+	for idx, trx := range journalToPersist.GetTransactions() {
 		if _, exist := InMemoryTransactionTable[trx.GetTransactionID()]; exist {
+			logrus.Errorf("error persisting journal %s. transaction %d is already exist.", journalToPersist.GetJournalID(), idx)
 			return ErrJournalTransactionAlreadyPersisted
 		}
 	}
@@ -126,6 +142,7 @@ func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error
 		}
 	}
 	if creditSum != debitSum {
+		logrus.Errorf("error persisting journal %s. debit (%d) != credit (%d). journal not balance", journalToPersist.GetJournalID(), debitSum, creditSum)
 		return ErrJournalNotBalance
 	}
 
@@ -133,6 +150,7 @@ func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error
 	accountDupCheck := make(map[string]bool)
 	for _, trx := range journalToPersist.GetTransactions() {
 		if _, exist := accountDupCheck[trx.GetAccountNumber()]; exist {
+			logrus.Errorf("error persisting journal %s. multiple transaction belong to the same account (%s)", journalToPersist.GetJournalID(), trx.GetAccountNumber())
 			return ErrJournalTransactionAccountDuplicate
 		}
 		accountDupCheck[trx.GetAccountNumber()] = true
@@ -141,6 +159,7 @@ func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error
 	// 7. Make sure transactions are all belong to existing accounts
 	for _, trx := range journalToPersist.GetTransactions() {
 		if _, exist := InMemoryAccountTable[trx.GetAccountNumber()]; !exist {
+			logrus.Errorf("error persisting journal %s. theres a transaction belong to non existent account (%s)", journalToPersist.GetJournalID(), trx.GetAccountNumber())
 			return ErrJournalTransactionAccountNotPersist
 		}
 	}
@@ -154,6 +173,7 @@ func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error
 			currency = cur
 		} else {
 			if cur != currency {
+				logrus.Errorf("error persisting journal %s. transactions here uses account with different currencies", journalToPersist.GetJournalID())
 				return ErrJournalTransactionMixCurrency
 			}
 		}
@@ -166,6 +186,7 @@ func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error
 			return err
 		}
 		if reversed {
+			logrus.Errorf("error persisting journal %s. this journal try to make reverse transaction on journals thats already reversed %s", journalToPersist.GetJournalID(), journalToPersist.GetJournalID())
 			return ErrJournalCanNotDoubleReverse
 		}
 	}
@@ -370,6 +391,7 @@ func (jm *InMemoryJournalManager) IsJournalIdReversed(journalId string) (bool, e
 		}
 		return false, nil
 	} else {
+		// todo emit error logs just before returning with errors.
 		return false, ErrJournalIdNotFound
 	}
 }
@@ -398,6 +420,7 @@ func (jm *InMemoryJournalManager) RenderJournal(journal Journal) string {
 	return buff.String()
 }
 
+// InMemoryAccountManager implementation of AccountManager using inmemory Account table map
 type InMemoryAccountManager struct {
 }
 
@@ -628,6 +651,7 @@ func (am *InMemoryAccountManager) FindAccounts(nameLike string, request PageRequ
 	return pageResult, accounts, nil
 }
 
+// InMemoryTransactionManager implementation of TransactionManager using inmemory Account table map
 type InMemoryTransactionManager struct {
 }
 
