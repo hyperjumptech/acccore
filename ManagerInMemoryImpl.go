@@ -2,6 +2,7 @@ package acccore
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
@@ -78,7 +79,7 @@ type InMemoryJournalManager struct {
 }
 
 // NewJournal will create new blank un-persisted journal
-func (jm *InMemoryJournalManager) NewJournal() Journal {
+func (jm *InMemoryJournalManager) NewJournal(context context.Context) Journal {
 	return &BaseJournal{}
 }
 
@@ -92,7 +93,7 @@ func (jm *InMemoryJournalManager) NewJournal() Journal {
 // If your database support 2 phased commit, you can make all balance changes in
 // accounts and transactions. If your db do not support this, you can implement your own 2 phase commits mechanism
 // on the CommitJournal and CancelJournal
-func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error {
+func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journalToPersist Journal) error {
 	// First we have to make sure that the journalToPersist is not yet in our database.
 	// 1. Checking if the mandatories is not missing
 	if journalToPersist == nil {
@@ -185,7 +186,7 @@ func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error
 
 	// 9. If this is a reversal journal, make sure the journal being reversed have not been reversed before.
 	if journalToPersist.GetReversedJournal() != nil {
-		reversed, err := jm.IsJournalIdReversed(journalToPersist.GetJournalID())
+		reversed, err := jm.IsJournalIdReversed(context, journalToPersist.GetJournalID())
 		if err != nil {
 			return err
 		}
@@ -263,7 +264,7 @@ func (jm *InMemoryJournalManager) PersistJournal(journalToPersist Journal) error
 // use this if the implementation database do not support 2 phased commit.
 // if your database support 2 phased commit, you should do all commit in the PersistJournal function
 // and this function should simply return nil.
-func (jm *InMemoryJournalManager) CommitJournal(journalToCommit Journal) error {
+func (jm *InMemoryJournalManager) CommitJournal(context context.Context, journalToCommit Journal) error {
 	return nil
 }
 
@@ -272,12 +273,12 @@ func (jm *InMemoryJournalManager) CommitJournal(journalToCommit Journal) error {
 // use this if the implementation database do not support 2 phased commit.
 // if your database do not support 2 phased commit, you should do all roll back in the PersistJournal function
 // and this function should simply return nil.
-func (jm *InMemoryJournalManager) CancelJournal(journalToCancel Journal) error {
+func (jm *InMemoryJournalManager) CancelJournal(context context.Context, journalToCancel Journal) error {
 	return nil
 }
 
 // IsTransactionIdExist will check if an Transaction ID/number is exist in the database.
-func (jm *InMemoryJournalManager) IsJournalIdExist(id string) (bool, error) {
+func (jm *InMemoryJournalManager) IsJournalIdExist(context context.Context, id string) (bool, error) {
 	// SELECT COUNT(*) FROM JOURNAL WHERE JOURNAL_ID = <accountNumber>
 	// return true if COUNT > 0
 	// return false if COUNT == 0
@@ -287,17 +288,17 @@ func (jm *InMemoryJournalManager) IsJournalIdExist(id string) (bool, error) {
 
 // GetJournalById retrieved a Journal information identified by its ID.
 // the provided ID must be exactly the same, not uses the LIKE select expression.
-func (jm *InMemoryJournalManager) GetJournalById(journalId string) (Journal, error) {
+func (jm *InMemoryJournalManager) GetJournalById(context context.Context, journalId string) (Journal, error) {
 	journalRecord, exist := InMemoryJournalTable[journalId]
 	if !exist {
 		return nil, ErrJournalIdNotFound
 	}
-	journal := jm.NewJournal().SetDescription(journalRecord.description).SetCreateTime(journalRecord.createTime).
+	journal := jm.NewJournal(context).SetDescription(journalRecord.description).SetCreateTime(journalRecord.createTime).
 		SetCreateBy(journalRecord.createBy).SetReversal(journalRecord.reversal).
 		SetJournalingTime(journalRecord.journalingTime).SetJournalID(journalRecord.journalId).SetAmount(journalRecord.amount)
 
 	if journalRecord.reversal == true {
-		reversed, err := jm.GetJournalById(journalRecord.reversedJournalId)
+		reversed, err := jm.GetJournalById(context, journalRecord.reversedJournalId)
 		if err != nil {
 			return nil, ErrJournalLoadReversalInconsistent
 		}
@@ -332,7 +333,7 @@ func (jm *InMemoryJournalManager) GetJournalById(journalId string) (Journal, err
 
 // ListJournals retrieve list of journals with transaction date between the `from` and `until` time range inclusive.
 // This function uses pagination.
-func (jm *InMemoryJournalManager) ListJournals(from time.Time, until time.Time, request PageRequest) (PageResult, []Journal, error) {
+func (jm *InMemoryJournalManager) ListJournals(context context.Context, from time.Time, until time.Time, request PageRequest) (PageResult, []Journal, error) {
 	// SELECT COUNT(*) FROM JOURNAL WHERE JOURNALING_TIME < {until} AND JOURNALING_TIME > {from}
 	allResult := make([]*InMemoryJournalRecords, 0)
 	for _, j := range InMemoryJournalTable {
@@ -350,7 +351,7 @@ func (jm *InMemoryJournalManager) ListJournals(from time.Time, until time.Time, 
 
 	journals := make([]Journal, pageResult.PageSize)
 	for i, r := range allResult[pageResult.Offset : pageResult.Offset+pageResult.PageSize] {
-		journal, err := jm.GetJournalById(r.journalId)
+		journal, err := jm.GetJournalById(context, r.journalId)
 		if err != nil {
 			return PageResult{}, nil, err
 		}
@@ -382,7 +383,7 @@ func GetTotalCredit(journal Journal) int64 {
 }
 
 // IsJournalIdReversed check if the journal with specified ID has been reversed
-func (jm *InMemoryJournalManager) IsJournalIdReversed(journalId string) (bool, error) {
+func (jm *InMemoryJournalManager) IsJournalIdReversed(context context.Context, journalId string) (bool, error) {
 	// SELECT COUNT(*) FROM JOURNAL WHERE REVERSED_JOURNAL_ID = {journalID}
 	// return false if COUNT = 0
 	// return true if COUNT > 0
@@ -401,7 +402,7 @@ func (jm *InMemoryJournalManager) IsJournalIdReversed(journalId string) (bool, e
 }
 
 // Render this journal into string for easy inspection
-func (jm *InMemoryJournalManager) RenderJournal(journal Journal) string {
+func (jm *InMemoryJournalManager) RenderJournal(context context.Context, journal Journal) string {
 	var buff bytes.Buffer
 	table := tablewriter.NewWriter(&buff)
 	table.SetHeader([]string{"TRX ID", "Account", "Description", "DEBIT", "CREDIT"})
@@ -429,13 +430,13 @@ type InMemoryAccountManager struct {
 }
 
 // NewAccount will create a new blank un-persisted account.
-func (am *InMemoryAccountManager) NewAccount() Account {
+func (am *InMemoryAccountManager) NewAccount(context context.Context) Account {
 	return &BaseAccount{}
 }
 
 // PersistAccount will save the account into database.
 // will throw error if the account already persisted
-func (am *InMemoryAccountManager) PersistAccount(AccountToPersist Account) error {
+func (am *InMemoryAccountManager) PersistAccount(context context.Context, AccountToPersist Account) error {
 	if len(AccountToPersist.GetAccountNumber()) == 0 {
 		return ErrAccountMissingID
 	}
@@ -450,7 +451,7 @@ func (am *InMemoryAccountManager) PersistAccount(AccountToPersist Account) error
 	}
 
 	// First make sure that The account have never been created in DB.
-	exist, err := am.IsAccountIdExist(AccountToPersist.GetAccountNumber())
+	exist, err := am.IsAccountIdExist(context, AccountToPersist.GetAccountNumber())
 	if err != nil {
 		return err
 	}
@@ -479,7 +480,7 @@ func (am *InMemoryAccountManager) PersistAccount(AccountToPersist Account) error
 
 // UpdateAccount will update the account database to reflect to the provided account information.
 // This update account function will fail if the account ID/number is not existing in the database.
-func (am *InMemoryAccountManager) UpdateAccount(AccountToUpdate Account) error {
+func (am *InMemoryAccountManager) UpdateAccount(context context.Context, AccountToUpdate Account) error {
 	if len(AccountToUpdate.GetAccountNumber()) == 0 {
 		return ErrAccountMissingID
 	}
@@ -494,7 +495,7 @@ func (am *InMemoryAccountManager) UpdateAccount(AccountToUpdate Account) error {
 	}
 
 	// First make sure that The account have never been created in DB.
-	exist, err := am.IsAccountIdExist(AccountToUpdate.GetAccountNumber())
+	exist, err := am.IsAccountIdExist(context, AccountToUpdate.GetAccountNumber())
 	if err != nil {
 		return err
 	}
@@ -522,14 +523,14 @@ func (am *InMemoryAccountManager) UpdateAccount(AccountToUpdate Account) error {
 }
 
 // IsAccountIdExist will check if an account ID/number is exist in the database.
-func (am *InMemoryAccountManager) IsAccountIdExist(id string) (bool, error) {
+func (am *InMemoryAccountManager) IsAccountIdExist(context context.Context, id string) (bool, error) {
 	// SELECT COUNT(*) FROM ACCOUNT WHERE ACCOUNT_NUMBER = {accountNumber}
 	_, exist := InMemoryAccountTable[id]
 	return exist, nil
 }
 
 // GetAccountById retrieve an account information by specifying the ID/number
-func (am *InMemoryAccountManager) GetAccountById(id string) (Account, error) {
+func (am *InMemoryAccountManager) GetAccountById(context context.Context, id string) (Account, error) {
 	accountRecord, exist := InMemoryAccountTable[id]
 	if !exist {
 		return nil, ErrAccountIdNotFound
@@ -551,7 +552,7 @@ func (am *InMemoryAccountManager) GetAccountById(id string) (Account, error) {
 
 // ListAccounts list all account in the database.
 // This function uses pagination
-func (am *InMemoryAccountManager) ListAccounts(request PageRequest) (PageResult, []Account, error) {
+func (am *InMemoryAccountManager) ListAccounts(context context.Context, request PageRequest) (PageResult, []Account, error) {
 	resultSlice := make([]*InMemoryAccountRecord, 0)
 	for _, r := range InMemoryAccountTable {
 		resultSlice = append(resultSlice, r)
@@ -585,7 +586,7 @@ func (am *InMemoryAccountManager) ListAccounts(request PageRequest) (PageResult,
 
 // ListAccountByCOA returns list of accounts that have the same COA number.
 // This function uses pagination
-func (am *InMemoryAccountManager) ListAccountByCOA(coa string, request PageRequest) (PageResult, []Account, error) {
+func (am *InMemoryAccountManager) ListAccountByCOA(context context.Context, coa string, request PageRequest) (PageResult, []Account, error) {
 	resultSlice := make([]*InMemoryAccountRecord, 0)
 	for _, r := range InMemoryAccountTable {
 		if r.coa == coa {
@@ -621,7 +622,7 @@ func (am *InMemoryAccountManager) ListAccountByCOA(coa string, request PageReque
 
 // FindAccounts returns list of accounts that have their name contains a substring of specified parameter.
 // this search should  be case insensitive.
-func (am *InMemoryAccountManager) FindAccounts(nameLike string, request PageRequest) (PageResult, []Account, error) {
+func (am *InMemoryAccountManager) FindAccounts(context context.Context, nameLike string, request PageRequest) (PageResult, []Account, error) {
 	resultSlice := make([]*InMemoryAccountRecord, 0)
 	for _, r := range InMemoryAccountTable {
 		if strings.Contains(strings.ToUpper(r.name), strings.ToUpper(nameLike)) {
@@ -660,18 +661,18 @@ type InMemoryTransactionManager struct {
 }
 
 // NewTransaction will create new blank un-persisted Transaction
-func (tm *InMemoryTransactionManager) NewTransaction() Transaction {
+func (tm *InMemoryTransactionManager) NewTransaction(context context.Context) Transaction {
 	return &BaseTransaction{}
 }
 
 // IsTransactionIdExist will check if an Transaction ID/number is exist in the database.
-func (tm *InMemoryTransactionManager) IsTransactionIdExist(id string) (bool, error) {
+func (tm *InMemoryTransactionManager) IsTransactionIdExist(context context.Context, id string) (bool, error) {
 	_, exist := InMemoryTransactionTable[id]
 	return exist, nil
 }
 
 // GetTransactionById will retrieve one single transaction that identified by some ID
-func (tm *InMemoryTransactionManager) GetTransactionById(id string) (Transaction, error) {
+func (tm *InMemoryTransactionManager) GetTransactionById(context context.Context, id string) (Transaction, error) {
 	trx, exist := InMemoryTransactionTable[id]
 	if !exist {
 		return nil, ErrTransactionNotFound
@@ -695,7 +696,7 @@ func (tm *InMemoryTransactionManager) GetTransactionById(id string) (Transaction
 // ListTransactionsWithAccount retrieves list of transactions that belongs to this account
 // that transaction happens between the `from` and `until` time range.
 // This function uses pagination
-func (tm *InMemoryTransactionManager) ListTransactionsOnAccount(from time.Time, until time.Time, account Account, request PageRequest) (PageResult, []Transaction, error) {
+func (tm *InMemoryTransactionManager) ListTransactionsOnAccount(context context.Context, from time.Time, until time.Time, account Account, request PageRequest) (PageResult, []Transaction, error) {
 	resultRecord := make([]*InMemoryTransactionRecords, 0)
 	for _, trx := range InMemoryTransactionTable {
 		if trx.accountNumber == account.GetAccountNumber() {
@@ -728,9 +729,9 @@ func (tm *InMemoryTransactionManager) ListTransactionsOnAccount(from time.Time, 
 }
 
 // RenderTransactionsOnAccount Render list of transaction been down on an account in a time span
-func (tm *InMemoryTransactionManager) RenderTransactionsOnAccount(from time.Time, until time.Time, account Account, request PageRequest) (string, error) {
+func (tm *InMemoryTransactionManager) RenderTransactionsOnAccount(context context.Context, from time.Time, until time.Time, account Account, request PageRequest) (string, error) {
 
-	result, transactions, err := tm.ListTransactionsOnAccount(from, until, account, request)
+	result, transactions, err := tm.ListTransactionsOnAccount(context, from, until, account, request)
 	if err != nil {
 		return "Error rendering", err
 	}
