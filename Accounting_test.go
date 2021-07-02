@@ -1,12 +1,15 @@
 package acccore
 
 import (
+	"context"
 	"testing"
 	"time"
 )
 
 func TestAccounting_CreateNewAccount(t *testing.T) {
 	ClearInMemoryTables()
+
+	ctx := context.Background()
 
 	acc := &Accounting{
 		accountManager:     &InMemoryAccountManager{},
@@ -21,12 +24,12 @@ func TestAccounting_CreateNewAccount(t *testing.T) {
 		},
 	}
 
-	account, err := acc.CreateNewAccount("Test Account", "Gold base test user account", "1.1", "GOLD", CREDIT, "aCreator")
+	account, err := acc.CreateNewAccount(ctx, "Test Account", "Gold base test user account", "1.1", "GOLD", CREDIT, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
 	}
-	exist, err := acc.accountManager.IsAccountIdExist(account.GetAccountNumber())
+	exist, err := acc.accountManager.IsAccountIdExist(ctx, account.GetAccountNumber())
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
@@ -35,7 +38,7 @@ func TestAccounting_CreateNewAccount(t *testing.T) {
 		t.Error("account should exist after creation")
 		t.FailNow()
 	}
-	render, err := acc.transactionManager.RenderTransactionsOnAccount(time.Now().Add(-2*time.Hour), time.Now().Add(2*time.Hour), account, PageRequest{
+	render, err := acc.transactionManager.RenderTransactionsOnAccount(ctx, time.Now().Add(-2*time.Hour), time.Now().Add(2*time.Hour), account, PageRequest{
 		PageNo:   1,
 		ItemSize: 10,
 		Sorts:    nil,
@@ -52,6 +55,8 @@ func TestAccounting_CreateNewAccount(t *testing.T) {
 func TestAccounting_CreateNewJournal(t *testing.T) {
 	ClearInMemoryTables()
 
+	ctx := context.Background()
+
 	acc := &Accounting{
 		accountManager:     &InMemoryAccountManager{},
 		transactionManager: &InMemoryTransactionManager{},
@@ -65,19 +70,19 @@ func TestAccounting_CreateNewJournal(t *testing.T) {
 		},
 	}
 
-	goldLoan, err := acc.CreateNewAccount("Gold Loan", "Gold base loan reserve", "1.1", "GOLD", DEBIT, "aCreator")
+	goldLoan, err := acc.CreateNewAccount(ctx, "Gold Loan", "Gold base loan reserve", "1.1", "GOLD", DEBIT, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
 	}
 
-	alphaCreditor, err := acc.CreateNewAccount("Gold Creditor Alpha", "Gold base debitor alpha", "2.1", "GOLD", CREDIT, "aCreator")
+	alphaCreditor, err := acc.CreateNewAccount(ctx, "Gold Creditor Alpha", "Gold base debitor alpha", "2.1", "GOLD", CREDIT, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
 	}
 
-	betaDebitor, err := acc.CreateNewAccount("Gold Debitor Alpha", "Gold base creditor beta", "3.1", "GOLD", DEBIT, "aCreator")
+	betaDebitor, err := acc.CreateNewAccount(ctx, "Gold Debitor Alpha", "Gold base creditor beta", "3.1", "GOLD", DEBIT, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
@@ -97,12 +102,12 @@ func TestAccounting_CreateNewJournal(t *testing.T) {
 			Amount:        1000000,
 		},
 	}
-	journal, err := acc.CreateNewJournal("Creditor Topup Gold", topupTransactions, "aCreator")
+	journal, err := acc.CreateNewJournal(ctx, "Creditor Topup Gold", topupTransactions, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
 	}
-	t.Log(acc.journalManager.RenderJournal(journal))
+	t.Log(acc.journalManager.RenderJournal(ctx, journal))
 
 	goldPurchaseTransaction := []TransactionInfo{
 		{
@@ -118,14 +123,14 @@ func TestAccounting_CreateNewJournal(t *testing.T) {
 			Amount:        200000,
 		},
 	}
-	journal, err = acc.CreateNewJournal("GOLD purchase transaction", goldPurchaseTransaction, "aCreator")
+	journal, err = acc.CreateNewJournal(ctx, "GOLD purchase transaction", goldPurchaseTransaction, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
 	}
-	t.Log(acc.journalManager.RenderJournal(journal))
+	t.Log(acc.journalManager.RenderJournal(ctx, journal))
 
-	render, err := acc.transactionManager.RenderTransactionsOnAccount(time.Now().Add(-2*time.Hour), time.Now().Add(2*time.Hour), goldLoan, PageRequest{
+	render, err := acc.transactionManager.RenderTransactionsOnAccount(ctx, time.Now().Add(-2*time.Hour), time.Now().Add(2*time.Hour), goldLoan, PageRequest{
 		PageNo:   1,
 		ItemSize: 10,
 		Sorts:    nil,
