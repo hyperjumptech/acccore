@@ -64,6 +64,10 @@ var (
 )
 
 func init() {
+	ClearInMemoryTables()
+}
+
+func ClearInMemoryTables() {
 	InMemoryJournalTable = make(map[string]*InMemoryJournalRecords, 0)
 	InMemoryAccountTable = make(map[string]*InMemoryAccountRecord, 0)
 	InMemoryTransactionTable = make(map[string]*InMemoryTransactionRecords, 0)

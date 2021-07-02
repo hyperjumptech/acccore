@@ -26,10 +26,10 @@ func (acc *Accounting) CreateNewAccount(name, description, coa string, currency 
 }
 
 type TransactionInfo struct {
-	AccountId   string
-	Description string
-	TxType      TransactionType
-	Amount      int64
+	AccountNumber string
+	Description   string
+	TxType        TransactionType
+	Amount        int64
 }
 
 func (acc *Accounting) CreateNewJournal(description string, transactions []TransactionInfo, creator string) (Journal, error) {
@@ -44,7 +44,7 @@ func (acc *Accounting) CreateNewJournal(description string, transactions []Trans
 	// make sure all transactions have accounts of the same Currency
 	for _, txinfo := range transactions {
 		newTransaction := acc.transactionManager.NewTransaction().SetCreateBy(creator).SetCreateTime(time.Now()).
-			SetDescription(txinfo.Description).SetAccountNumber(txinfo.AccountId).
+			SetDescription(txinfo.Description).SetAccountNumber(txinfo.AccountNumber).SetAmount(txinfo.Amount).
 			SetTransactionTime(time.Now()).SetTransactionType(txinfo.TxType).SetTransactionID(acc.uniqueIDGenerator.NewUniqueID())
 
 		transacs = append(transacs, newTransaction)
