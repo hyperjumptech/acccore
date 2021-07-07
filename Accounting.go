@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+// NewAccounting instantiate new Accounting logic modules.
+func NewAccounting(accountManager AccountManager, transactionManager TransactionManager, journalManager JournalManager, uniqueIDGenerator UniqueIDGenerator) *Accounting {
+	return &Accounting{
+		accountManager:     accountManager,
+		transactionManager: transactionManager,
+		journalManager:     journalManager,
+		uniqueIDGenerator:  uniqueIDGenerator,
+	}
+}
+
 type Accounting struct {
 	accountManager     AccountManager
 	transactionManager TransactionManager
