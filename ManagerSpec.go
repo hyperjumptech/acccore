@@ -151,7 +151,7 @@ type ExchangeManager interface {
 
 	// SetExchangeValueOf set the specified value as denominator value for that speciffic currency.
 	// This function should return error if the currency specified is not exist.
-	SetExchangeValueOf(context context.Context, currency string, exchange *big.Float) error
+	SetExchangeValueOf(context context.Context, currency string, exchange *big.Float, author string) error
 	// GetExchangeValueOf get the denominator value of the specified currency.
 	// Error should be returned if the specified currency is not exist.
 	GetExchangeValueOf(context context.Context, currency string) (*big.Float, error)

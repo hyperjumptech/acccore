@@ -796,7 +796,7 @@ func (em *InMemoryExchangeManager) SetDenom(context context.Context, denom *big.
 
 // SetExchangeValueOf set the specified value as denominator value for that speciffic currency.
 // This function should return error if the currency specified is not exist.
-func (em *InMemoryExchangeManager) SetExchangeValueOf(context context.Context, currency string, exchange *big.Float) error {
+func (em *InMemoryExchangeManager) SetExchangeValueOf(context context.Context, currency string, exchange *big.Float, author string) error {
 	if exist, err := em.IsCurrencyExist(currency); err == nil {
 		if exist {
 			em.exchangeMap[currency] = exchange
