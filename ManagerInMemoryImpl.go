@@ -779,7 +779,7 @@ type InMemoryExchangeManager struct {
 // IsCurrencyExist will check in the exchange system for a currency existance
 // non-existent currency means that the currency is not supported.
 // error should be thrown if only there's an underlying error such as db error.
-func (em *InMemoryExchangeManager) IsCurrencyExist(currency string) (bool, error) {
+func (em *InMemoryExchangeManager) IsCurrencyExist(context context.Context, currency string) (bool, error) {
 	_, exist := em.exchangeMap[currency]
 	return exist, nil
 }
@@ -797,7 +797,7 @@ func (em *InMemoryExchangeManager) SetDenom(context context.Context, denom *big.
 // SetExchangeValueOf set the specified value as denominator value for that speciffic currency.
 // This function should return error if the currency specified is not exist.
 func (em *InMemoryExchangeManager) SetExchangeValueOf(context context.Context, currency string, exchange *big.Float, author string) error {
-	if exist, err := em.IsCurrencyExist(currency); err == nil {
+	if exist, err := em.IsCurrencyExist(context, currency); err == nil {
 		if exist {
 			em.exchangeMap[currency] = exchange
 			return nil
@@ -811,7 +811,7 @@ func (em *InMemoryExchangeManager) SetExchangeValueOf(context context.Context, c
 // GetExchangeValueOf get the denominator value of the specified currency.
 // Error should be returned if the specified currency is not exist.
 func (em *InMemoryExchangeManager) GetExchangeValueOf(context context.Context, currency string) (*big.Float, error) {
-	if exist, err := em.IsCurrencyExist(currency); err == nil {
+	if exist, err := em.IsCurrencyExist(context, currency); err == nil {
 		if exist {
 			return em.exchangeMap[currency], nil
 		}
