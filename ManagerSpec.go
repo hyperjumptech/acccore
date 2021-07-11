@@ -143,7 +143,7 @@ type ExchangeManager interface {
 	// IsCurrencyExist will check in the exchange system for a currency existance
 	// non-existent currency means that the currency is not supported.
 	// error should be thrown if only there's an underlying error such as db error.
-	IsCurrencyExist(currency string) (bool, error)
+	IsCurrencyExist(context context.Context, currency string) (bool, error)
 	// GetDenom get the current common denominator used in the exchange
 	GetDenom(context context.Context) *big.Float
 	// SetDenom set the current common denominator value into the specified value
