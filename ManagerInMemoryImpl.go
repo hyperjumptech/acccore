@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/sirupsen/logrus"
+	"math/big"
 	"sort"
 	"strings"
 	"time"
@@ -760,4 +761,93 @@ func (tm *InMemoryTransactionManager) RenderTransactionsOnAccount(context contex
 	buff.WriteString(fmt.Sprintf("Showing page      : %d/%d\n", result.Page, result.TotalPages))
 	table.Render()
 	return buff.String(), err
+}
+
+func NewInMemoryExchangeManager(exchangeMap map[string]*big.Float) ExchangeManager {
+	return &InMemoryExchangeManager{
+		commonDenominator: big.NewFloat(1.0),
+		exchangeMap:       exchangeMap,
+	}
+}
+
+// InMemoryExchangeManager is a base implementation of ExchangeManager.
+type InMemoryExchangeManager struct {
+	commonDenominator *big.Float
+	exchangeMap       map[string]*big.Float
+}
+
+// IsCurrencyExist will check in the exchange system for a currency existance
+// non-existent currency means that the currency is not supported.
+// error should be thrown if only there's an underlying error such as db error.
+func (em *InMemoryExchangeManager) IsCurrencyExist(currency string) (bool, error) {
+	_, exist := em.exchangeMap[currency]
+	return exist, nil
+}
+
+// GetDenom get the current common denominator used in the exchange
+func (em *InMemoryExchangeManager) GetDenom(context context.Context) *big.Float {
+	return em.commonDenominator
+}
+
+// SetDenom set the current common denominator value into the specified value
+func (em *InMemoryExchangeManager) SetDenom(context context.Context, denom *big.Float) {
+	em.commonDenominator = denom
+}
+
+// SetExchangeValueOf set the specified value as denominator value for that speciffic currency.
+// This function should return error if the currency specified is not exist.
+func (em *InMemoryExchangeManager) SetExchangeValueOf(context context.Context, currency string, exchange *big.Float) error {
+	if exist, err := em.IsCurrencyExist(currency); err == nil {
+		if exist {
+			em.exchangeMap[currency] = exchange
+			return nil
+		}
+		return ErrCurrencyNotFound
+	} else {
+		return err
+	}
+}
+
+// GetExchangeValueOf get the denominator value of the specified currency.
+// Error should be returned if the specified currency is not exist.
+func (em *InMemoryExchangeManager) GetExchangeValueOf(context context.Context, currency string) (*big.Float, error) {
+	if exist, err := em.IsCurrencyExist(currency); err == nil {
+		if exist {
+			return em.exchangeMap[currency], nil
+		}
+		return nil, ErrCurrencyNotFound
+	} else {
+		return nil, err
+	}
+}
+
+// Get the currency exchange rate for exchanging between the two currency.
+// if any of the currency is not exist, an error should be returned.
+// if from and to currency is equal, this must return 1.0
+func (em *InMemoryExchangeManager) CalculateExchangeRate(context context.Context, fromCurrency, toCurrency string) (*big.Float, error) {
+	from, err := em.GetExchangeValueOf(context, fromCurrency)
+	if err != nil {
+		return nil, err
+	}
+	to, err := em.GetExchangeValueOf(context, toCurrency)
+	if err != nil {
+		return nil, err
+	}
+	m1 := new(big.Float).Quo(em.GetDenom(context), from)
+	m2 := new(big.Float).Mul(m1, to)
+	m3 := new(big.Float).Quo(m2, em.GetDenom(context))
+	return m3, nil
+}
+
+// Get the currency exchange value for the amount of fromCurrency into toCurrency.
+// If any of the currency is not exist, an error should be returned.
+// if from and to currency is equal, the returned amount must be equal to the amount in the argument.
+func (em *InMemoryExchangeManager) CalculateExchange(context context.Context, fromCurrency, toCurrency string, amount int64) (int64, error) {
+	exchange, err := em.CalculateExchangeRate(context, fromCurrency, toCurrency)
+	if err != nil {
+		return 0, err
+	}
+	m1 := new(big.Float).Mul(exchange, big.NewFloat(float64(amount)))
+	f, _ := m1.Float64()
+	return int64(f), nil
 }

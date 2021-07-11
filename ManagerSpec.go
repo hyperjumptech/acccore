@@ -3,6 +3,7 @@ package acccore
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"time"
 )
 
@@ -31,6 +32,8 @@ var (
 	ErrAccountMissingCreator     = fmt.Errorf("account creator is not provided")
 
 	ErrTransactionNotFound = fmt.Errorf("transaction accountNumber not in database")
+
+	ErrCurrencyNotFound = fmt.Errorf("currency not found")
 )
 
 // JournalManager is interface used of managing journals
@@ -132,4 +135,33 @@ type AccountManager interface {
 	// FindAccounts returns list of accounts that have their name contains a substring of specified parameter.
 	// this search should  be case insensitive.
 	FindAccounts(context context.Context, nameLike string, request PageRequest) (PageResult, []Account, error)
+}
+
+// ExchangeManager will define functions to be implemented for currency exchanges.
+// this interface follows the exchange mechanism using a common denominator.
+type ExchangeManager interface {
+	// IsCurrencyExist will check in the exchange system for a currency existance
+	// non-existent currency means that the currency is not supported.
+	// error should be thrown if only there's an underlying error such as db error.
+	IsCurrencyExist(currency string) (bool, error)
+	// GetDenom get the current common denominator used in the exchange
+	GetDenom(context context.Context) *big.Float
+	// SetDenom set the current common denominator value into the specified value
+	SetDenom(context context.Context, denom *big.Float)
+
+	// SetExchangeValueOf set the specified value as denominator value for that speciffic currency.
+	// This function should return error if the currency specified is not exist.
+	SetExchangeValueOf(context context.Context, currency string, exchange *big.Float) error
+	// GetExchangeValueOf get the denominator value of the specified currency.
+	// Error should be returned if the specified currency is not exist.
+	GetExchangeValueOf(context context.Context, currency string) (*big.Float, error)
+
+	// Get the currency exchange rate for exchanging between the two currency.
+	// if any of the currency is not exist, an error should be returned.
+	// if from and to currency is equal, this must return 1.0
+	CalculateExchangeRate(context context.Context, fromCurrency, toCurrency string) (*big.Float, error)
+	// Get the currency exchange value for the amount of fromCurrency into toCurrency.
+	// If any of the currency is not exist, an error should be returned.
+	// if from and to currency is equal, the returned amount must be equal to the amount in the argument.
+	CalculateExchange(context context.Context, fromCurrency, toCurrency string, amount int64) (int64, error)
 }
