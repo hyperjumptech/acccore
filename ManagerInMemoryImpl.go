@@ -31,7 +31,7 @@ type InMemoryAccountRecord struct {
 	id                  string
 	name                string
 	description         string
-	baseTransactionType TransactionType
+	baseTransactionType Alignment
 	balance             int64
 	coa                 string
 	createTime          time.Time
@@ -47,7 +47,7 @@ type InMemoryTransactionRecords struct {
 	accountNumber   string
 	journalId       string
 	description     string
-	transactionType TransactionType
+	transactionType Alignment
 	amount          int64
 	accountBalance  int64
 	createTime      time.Time
@@ -85,14 +85,14 @@ func (jm *InMemoryJournalManager) NewJournal(context context.Context) Journal {
 }
 
 // PersistJournal will record a journal entry into database.
-// It requires list of transactions for which each of the transaction MUST BE :
-//    1.NOT BE PERSISTED. (the journal accountNumber is not exist in DB yet)
+// It requires list of Transactions for which each of the transaction MUST BE :
+//    1.NOT BE PERSISTED. (the journal AccountNumber is not exist in DB yet)
 //    2.Pointing or owned by a PERSISTED Account
 //    3.Each of this account must belong to the same Currency
 //    4.Balanced. The total sum of DEBIT and total sum of CREDIT is equal.
 //    5.No duplicate transaction that belongs to the same Account.
-// If your database support 2 phased commit, you can make all balance changes in
-// accounts and transactions. If your db do not support this, you can implement your own 2 phase commits mechanism
+// If your database support 2 phased commit, you can make all Balance changes in
+// accounts and Transactions. If your db do not support this, you can implement your own 2 phase commits mechanism
 // on the CommitJournal and CancelJournal
 func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journalToPersist Journal) error {
 	// First we have to make sure that the journalToPersist is not yet in our database.
@@ -101,11 +101,11 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 		return ErrJournalNil
 	}
 	if len(journalToPersist.GetJournalID()) == 0 {
-		logrus.Errorf("error persisting journal. journal is missing the journalID")
+		logrus.Errorf("error persisting journal. journal is missing the JournalID")
 		return ErrJournalMissingId
 	}
 	if len(journalToPersist.GetTransactions()) == 0 {
-		logrus.Errorf("error persisting journal %s. journal contains no transactions.", journalToPersist.GetJournalID())
+		logrus.Errorf("error persisting journal %s. journal contains no Transactions.", journalToPersist.GetJournalID())
 		return ErrJournalNoTransaction
 	}
 	if len(journalToPersist.GetCreateBy()) == 0 {
@@ -121,15 +121,15 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 		return ErrJournalAlreadyPersisted
 	}
 
-	// 3. Make sure all journal transactions are IDed.
+	// 3. Make sure all journal Transactions are IDed.
 	for idx, trx := range journalToPersist.GetTransactions() {
 		if len(trx.GetTransactionID()) == 0 {
-			logrus.Errorf("error persisting journal %s. transaction %d is missing transactionID.", journalToPersist.GetJournalID(), idx)
+			logrus.Errorf("error persisting journal %s. transaction %d is missing TransactionID.", journalToPersist.GetJournalID(), idx)
 			return ErrJournalTransactionMissingID
 		}
 	}
 
-	// 4. Make sure all journal transactions are not persisted.
+	// 4. Make sure all journal Transactions are not persisted.
 	for idx, trx := range journalToPersist.GetTransactions() {
 		if _, exist := InMemoryTransactionTable[trx.GetTransactionID()]; exist {
 			logrus.Errorf("error persisting journal %s. transaction %d is already exist.", journalToPersist.GetJournalID(), idx)
@@ -137,22 +137,22 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 		}
 	}
 
-	// 5. Make sure transactions are balanced.
+	// 5. Make sure Transactions are balanced.
 	var creditSum, debitSum int64
 	for _, trx := range journalToPersist.GetTransactions() {
-		if trx.GetTransactionType() == DEBIT {
+		if trx.GetAlignment() == DEBIT {
 			debitSum += trx.GetAmount()
 		}
-		if trx.GetTransactionType() == CREDIT {
+		if trx.GetAlignment() == CREDIT {
 			creditSum += trx.GetAmount()
 		}
 	}
 	if creditSum != debitSum {
-		logrus.Errorf("error persisting journal %s. debit (%d) != credit (%d). journal not balance", journalToPersist.GetJournalID(), debitSum, creditSum)
+		logrus.Errorf("error persisting journal %s. debit (%d) != credit (%d). journal not Balance", journalToPersist.GetJournalID(), debitSum, creditSum)
 		return ErrJournalNotBalance
 	}
 
-	// 6. Make sure transactions account are not appear twice in the journal
+	// 6. Make sure Transactions account are not appear twice in the journal
 	accountDupCheck := make(map[string]bool)
 	for _, trx := range journalToPersist.GetTransactions() {
 		if _, exist := accountDupCheck[trx.GetAccountNumber()]; exist {
@@ -162,7 +162,7 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 		accountDupCheck[trx.GetAccountNumber()] = true
 	}
 
-	// 7. Make sure transactions are all belong to existing accounts
+	// 7. Make sure Transactions are all belong to existing accounts
 	for _, trx := range journalToPersist.GetTransactions() {
 		if _, exist := InMemoryAccountTable[trx.GetAccountNumber()]; !exist {
 			logrus.Errorf("error persisting journal %s. theres a transaction belong to non existent account (%s)", journalToPersist.GetJournalID(), trx.GetAccountNumber())
@@ -170,7 +170,7 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 		}
 	}
 
-	// 8. Make sure transactions are all have the same currency
+	// 8. Make sure Transactions are all have the same Currency
 	var currency string
 	for idx, trx := range journalToPersist.GetTransactions() {
 		// SELECT CURRENCY FROM ACCOUNT WHERE ACCOUNT_NUMBER = {trx.GetAccountNumber()}
@@ -179,13 +179,13 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 			currency = cur
 		} else {
 			if cur != currency {
-				logrus.Errorf("error persisting journal %s. transactions here uses account with different currencies", journalToPersist.GetJournalID())
+				logrus.Errorf("error persisting journal %s. Transactions here uses account with different currencies", journalToPersist.GetJournalID())
 				return ErrJournalTransactionMixCurrency
 			}
 		}
 	}
 
-	// 9. If this is a reversal journal, make sure the journal being reversed have not been reversed before.
+	// 9. If this is a Reversal journal, make sure the journal being reversed have not been reversed before.
 	if journalToPersist.GetReversedJournal() != nil {
 		reversed, err := jm.IsJournalIdReversed(context, journalToPersist.GetJournalID())
 		if err != nil {
@@ -227,13 +227,13 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 			accountNumber:   trx.GetAccountNumber(),
 			journalId:       journalToInsert.journalId,
 			description:     trx.GetDescription(),
-			transactionType: trx.GetTransactionType(),
+			transactionType: trx.GetAlignment(),
 			amount:          trx.GetAmount(),
 			accountBalance:  0,          // will be updated
 			createTime:      time.Now(), // now is set
 			createBy:        trx.GetCreateBy(),
 		}
-		// get the account current balance
+		// get the account current Balance
 		// SELECT BALANCE, BASE_TRANSACTION_TYPE FROM ACCOUNT WHERE ACCOUNT_ID = {trx.GetAccountNumber()}
 		balance, accountTrxType := InMemoryAccountTable[trx.GetAccountNumber()].balance, InMemoryAccountTable[trx.GetAccountNumber()].baseTransactionType
 
@@ -280,7 +280,7 @@ func (jm *InMemoryJournalManager) CancelJournal(context context.Context, journal
 
 // IsTransactionIdExist will check if an Transaction ID/number is exist in the database.
 func (jm *InMemoryJournalManager) IsJournalIdExist(context context.Context, id string) (bool, error) {
-	// SELECT COUNT(*) FROM JOURNAL WHERE JOURNAL_ID = <accountNumber>
+	// SELECT COUNT(*) FROM JOURNAL WHERE JOURNAL_ID = <AccountNumber>
 	// return true if COUNT > 0
 	// return false if COUNT == 0
 	_, exist := InMemoryJournalTable[id]
@@ -306,22 +306,22 @@ func (jm *InMemoryJournalManager) GetJournalById(context context.Context, journa
 		journal.SetReversedJournal(reversed)
 	}
 
-	// Populate all transactions from DB.
+	// Populate all Transactions from DB.
 	transactions := make([]Transaction, 0)
-	// SELECT * FROM TRANSACTION WHERE JOURNAL_ID = {journalRecord.journalID}
+	// SELECT * FROM TRANSACTION WHERE JOURNAL_ID = {journalRecord.JournalID}
 	for _, trx := range InMemoryTransactionTable {
 		if trx.journalId == journalRecord.journalId {
 			transaction := &BaseTransaction{
-				transactionID:   trx.transactionId,
-				transactionTime: trx.transactionTime,
-				accountNumber:   trx.accountNumber,
-				journalID:       trx.journalId,
-				description:     trx.description,
-				transactionType: trx.transactionType,
-				amount:          trx.amount,
-				accountBalance:  trx.accountBalance,
-				createTime:      trx.createTime,
-				createBy:        trx.createBy,
+				TransactionID:   trx.transactionId,
+				TransactionTime: trx.transactionTime,
+				AccountNumber:   trx.accountNumber,
+				JournalID:       trx.journalId,
+				Description:     trx.description,
+				TransactionType: trx.transactionType,
+				Amount:          trx.amount,
+				AccountBalance:  trx.accountBalance,
+				CreateTime:      trx.createTime,
+				CreateBy:        trx.createBy,
 			}
 			transactions = append(transactions, transaction)
 		}
@@ -361,22 +361,22 @@ func (jm *InMemoryJournalManager) ListJournals(context context.Context, from tim
 	return pageResult, journals, nil
 }
 
-// GetTotalDebit returns sum of all transaction in the DEBIT alignment
+// GetTotalDebit returns sum of all transaction in the DEBIT Alignment
 func GetTotalDebit(journal Journal) int64 {
 	total := int64(0)
 	for _, t := range journal.GetTransactions() {
-		if t.GetTransactionType() == DEBIT {
+		if t.GetAlignment() == DEBIT {
 			total += t.GetAmount()
 		}
 	}
 	return total
 }
 
-// GetTotalCredit returns sum of all transaction in the CREDIT alignment
+// GetTotalCredit returns sum of all transaction in the CREDIT Alignment
 func GetTotalCredit(journal Journal) int64 {
 	total := int64(0)
 	for _, t := range journal.GetTransactions() {
-		if t.GetTransactionType() == CREDIT {
+		if t.GetAlignment() == CREDIT {
 			total += t.GetAmount()
 		}
 	}
@@ -385,7 +385,7 @@ func GetTotalCredit(journal Journal) int64 {
 
 // IsJournalIdReversed check if the journal with specified ID has been reversed
 func (jm *InMemoryJournalManager) IsJournalIdReversed(context context.Context, journalId string) (bool, error) {
-	// SELECT COUNT(*) FROM JOURNAL WHERE REVERSED_JOURNAL_ID = {journalID}
+	// SELECT COUNT(*) FROM JOURNAL WHERE REVERSED_JOURNAL_ID = {JournalID}
 	// return false if COUNT = 0
 	// return true if COUNT > 0
 	_, exist := InMemoryJournalTable[journalId]
@@ -410,12 +410,12 @@ func (jm *InMemoryJournalManager) RenderJournal(context context.Context, journal
 	table.SetFooter([]string{"", "", "", fmt.Sprintf("%d", GetTotalDebit(journal)), fmt.Sprintf("%d", GetTotalCredit(journal))})
 
 	for _, t := range journal.GetTransactions() {
-		if t.GetTransactionType() == DEBIT {
+		if t.GetAlignment() == DEBIT {
 			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), fmt.Sprintf("%d", t.GetAmount()), ""})
 		}
 	}
 	for _, t := range journal.GetTransactions() {
-		if t.GetTransactionType() == CREDIT {
+		if t.GetAlignment() == CREDIT {
 			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), "", fmt.Sprintf("%d", t.GetAmount())})
 		}
 	}
@@ -465,7 +465,7 @@ func (am *InMemoryAccountManager) PersistAccount(context context.Context, Accoun
 		id:                  AccountToPersist.GetAccountNumber(),
 		name:                AccountToPersist.GetName(),
 		description:         AccountToPersist.GetDescription(),
-		baseTransactionType: AccountToPersist.GetBaseTransactionType(),
+		baseTransactionType: AccountToPersist.GetAlignment(),
 		balance:             AccountToPersist.GetBalance(),
 		coa:                 AccountToPersist.GetCOA(),
 		createTime:          time.Now(),
@@ -509,7 +509,7 @@ func (am *InMemoryAccountManager) UpdateAccount(context context.Context, Account
 		id:                  AccountToUpdate.GetAccountNumber(),
 		name:                AccountToUpdate.GetName(),
 		description:         AccountToUpdate.GetDescription(),
-		baseTransactionType: AccountToUpdate.GetBaseTransactionType(),
+		baseTransactionType: AccountToUpdate.GetAlignment(),
 		balance:             AccountToUpdate.GetBalance(),
 		coa:                 AccountToUpdate.GetCOA(),
 		createTime:          time.Now(),
@@ -525,7 +525,7 @@ func (am *InMemoryAccountManager) UpdateAccount(context context.Context, Account
 
 // IsAccountIdExist will check if an account ID/number is exist in the database.
 func (am *InMemoryAccountManager) IsAccountIdExist(context context.Context, id string) (bool, error) {
-	// SELECT COUNT(*) FROM ACCOUNT WHERE ACCOUNT_NUMBER = {accountNumber}
+	// SELECT COUNT(*) FROM ACCOUNT WHERE ACCOUNT_NUMBER = {AccountNumber}
 	_, exist := InMemoryAccountTable[id]
 	return exist, nil
 }
@@ -537,17 +537,17 @@ func (am *InMemoryAccountManager) GetAccountById(context context.Context, id str
 		return nil, ErrAccountIdNotFound
 	}
 	return &BaseAccount{
-		currency:            accountRecord.currency,
-		accountNumber:       accountRecord.id,
-		name:                accountRecord.name,
-		description:         accountRecord.description,
-		baseTransactionType: accountRecord.baseTransactionType,
-		balance:             accountRecord.balance,
-		coa:                 accountRecord.coa,
-		createTime:          accountRecord.createTime,
-		createBy:            accountRecord.createBy,
-		updateTime:          accountRecord.updateTime,
-		updateBy:            accountRecord.updateBy,
+		Currency:      accountRecord.currency,
+		AccountNumber: accountRecord.id,
+		Name:          accountRecord.name,
+		Description:   accountRecord.description,
+		Alignment:     accountRecord.baseTransactionType,
+		Balance:       accountRecord.balance,
+		COA:           accountRecord.coa,
+		CreateTime:    accountRecord.createTime,
+		CreateBy:      accountRecord.createBy,
+		UpdateTime:    accountRecord.updateTime,
+		UpdateBy:      accountRecord.updateBy,
 	}, nil
 }
 
@@ -567,17 +567,17 @@ func (am *InMemoryAccountManager) ListAccounts(context context.Context, request 
 
 	for i, s := range resultSlice[pageResult.Offset : pageResult.Offset+pageResult.PageSize] {
 		bacc := &BaseAccount{
-			currency:            s.currency,
-			accountNumber:       s.id,
-			name:                s.name,
-			description:         s.description,
-			baseTransactionType: s.baseTransactionType,
-			balance:             s.balance,
-			coa:                 s.coa,
-			createTime:          s.createTime,
-			createBy:            s.createBy,
-			updateTime:          s.updateTime,
-			updateBy:            s.updateBy,
+			Currency:      s.currency,
+			AccountNumber: s.id,
+			Name:          s.name,
+			Description:   s.description,
+			Alignment:     s.baseTransactionType,
+			Balance:       s.balance,
+			COA:           s.coa,
+			CreateTime:    s.createTime,
+			CreateBy:      s.createBy,
+			UpdateTime:    s.updateTime,
+			UpdateBy:      s.updateBy,
 		}
 		accounts[i] = bacc
 	}
@@ -603,17 +603,17 @@ func (am *InMemoryAccountManager) ListAccountByCOA(context context.Context, coa 
 
 	for i, s := range resultSlice[pageResult.Offset : pageResult.Offset+pageResult.PageSize] {
 		bacc := &BaseAccount{
-			currency:            s.currency,
-			accountNumber:       s.id,
-			name:                s.name,
-			description:         s.description,
-			baseTransactionType: s.baseTransactionType,
-			balance:             s.balance,
-			coa:                 s.coa,
-			createTime:          s.createTime,
-			createBy:            s.createBy,
-			updateTime:          s.updateTime,
-			updateBy:            s.updateBy,
+			Currency:      s.currency,
+			AccountNumber: s.id,
+			Name:          s.name,
+			Description:   s.description,
+			Alignment:     s.baseTransactionType,
+			Balance:       s.balance,
+			COA:           s.coa,
+			CreateTime:    s.createTime,
+			CreateBy:      s.createBy,
+			UpdateTime:    s.updateTime,
+			UpdateBy:      s.updateBy,
 		}
 		accounts[i] = bacc
 	}
@@ -621,7 +621,7 @@ func (am *InMemoryAccountManager) ListAccountByCOA(context context.Context, coa 
 	return pageResult, accounts, nil
 }
 
-// FindAccounts returns list of accounts that have their name contains a substring of specified parameter.
+// FindAccounts returns list of accounts that have their Name contains a substring of specified parameter.
 // this search should  be case insensitive.
 func (am *InMemoryAccountManager) FindAccounts(context context.Context, nameLike string, request PageRequest) (PageResult, []Account, error) {
 	resultSlice := make([]*InMemoryAccountRecord, 0)
@@ -639,17 +639,17 @@ func (am *InMemoryAccountManager) FindAccounts(context context.Context, nameLike
 
 	for i, s := range resultSlice[pageResult.Offset : pageResult.Offset+pageResult.PageSize] {
 		bacc := &BaseAccount{
-			currency:            s.currency,
-			accountNumber:       s.id,
-			name:                s.name,
-			description:         s.description,
-			baseTransactionType: s.baseTransactionType,
-			balance:             s.balance,
-			coa:                 s.coa,
-			createTime:          s.createTime,
-			createBy:            s.createBy,
-			updateTime:          s.updateTime,
-			updateBy:            s.updateBy,
+			Currency:      s.currency,
+			AccountNumber: s.id,
+			Name:          s.name,
+			Description:   s.description,
+			Alignment:     s.baseTransactionType,
+			Balance:       s.balance,
+			COA:           s.coa,
+			CreateTime:    s.createTime,
+			CreateBy:      s.createBy,
+			UpdateTime:    s.updateTime,
+			UpdateBy:      s.updateBy,
 		}
 		accounts[i] = bacc
 	}
@@ -679,22 +679,22 @@ func (tm *InMemoryTransactionManager) GetTransactionById(context context.Context
 		return nil, ErrTransactionNotFound
 	}
 	transaction := &BaseTransaction{
-		transactionID:   trx.transactionId,
-		transactionTime: trx.transactionTime,
-		accountNumber:   trx.accountNumber,
-		journalID:       trx.journalId,
-		description:     trx.description,
-		transactionType: trx.transactionType,
-		amount:          trx.amount,
-		accountBalance:  trx.accountBalance,
-		createTime:      trx.createTime,
-		createBy:        trx.createBy,
+		TransactionID:   trx.transactionId,
+		TransactionTime: trx.transactionTime,
+		AccountNumber:   trx.accountNumber,
+		JournalID:       trx.journalId,
+		Description:     trx.description,
+		TransactionType: trx.transactionType,
+		Amount:          trx.amount,
+		AccountBalance:  trx.accountBalance,
+		CreateTime:      trx.createTime,
+		CreateBy:        trx.createBy,
 	}
 
 	return transaction, nil
 }
 
-// ListTransactionsWithAccount retrieves list of transactions that belongs to this account
+// ListTransactionsWithAccount retrieves list of Transactions that belongs to this account
 // that transaction happens between the `from` and `until` time range.
 // This function uses pagination
 func (tm *InMemoryTransactionManager) ListTransactionsOnAccount(context context.Context, from time.Time, until time.Time, account Account, request PageRequest) (PageResult, []Transaction, error) {
@@ -713,16 +713,16 @@ func (tm *InMemoryTransactionManager) ListTransactionsOnAccount(context context.
 	transactions := make([]Transaction, len(resultRecord))
 	for idx, trx := range resultRecord {
 		transaction := &BaseTransaction{
-			transactionID:   trx.transactionId,
-			transactionTime: trx.transactionTime,
-			accountNumber:   trx.accountNumber,
-			journalID:       trx.journalId,
-			description:     trx.description,
-			transactionType: trx.transactionType,
-			amount:          trx.amount,
-			accountBalance:  trx.accountBalance,
-			createTime:      trx.createTime,
-			createBy:        trx.createBy,
+			TransactionID:   trx.transactionId,
+			TransactionTime: trx.transactionTime,
+			AccountNumber:   trx.accountNumber,
+			JournalID:       trx.journalId,
+			Description:     trx.description,
+			TransactionType: trx.transactionType,
+			Amount:          trx.amount,
+			AccountBalance:  trx.accountBalance,
+			CreateTime:      trx.createTime,
+			CreateBy:        trx.createBy,
 		}
 		transactions[idx] = transaction
 	}
@@ -742,10 +742,10 @@ func (tm *InMemoryTransactionManager) RenderTransactionsOnAccount(context contex
 	table.SetHeader([]string{"TRX ID", "TIME", "JOURNAL ID", "Description", "DEBIT", "CREDIT", "BALANCE"})
 
 	for _, t := range transactions {
-		if t.GetTransactionType() == DEBIT {
+		if t.GetAlignment() == DEBIT {
 			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), fmt.Sprintf("%d", t.GetAmount()), "", fmt.Sprintf("%d", t.GetAccountBalance())})
 		}
-		if t.GetTransactionType() == CREDIT {
+		if t.GetAlignment() == CREDIT {
 			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), "", fmt.Sprintf("%d", t.GetAmount()), fmt.Sprintf("%d", t.GetAccountBalance())})
 		}
 	}
@@ -776,8 +776,8 @@ type InMemoryExchangeManager struct {
 	exchangeMap       map[string]*big.Float
 }
 
-// IsCurrencyExist will check in the exchange system for a currency existance
-// non-existent currency means that the currency is not supported.
+// IsCurrencyExist will check in the exchange system for a Currency existance
+// non-existent Currency means that the Currency is not supported.
 // error should be thrown if only there's an underlying error such as db error.
 func (em *InMemoryExchangeManager) IsCurrencyExist(context context.Context, currency string) (bool, error) {
 	_, exist := em.exchangeMap[currency]
@@ -794,8 +794,8 @@ func (em *InMemoryExchangeManager) SetDenom(context context.Context, denom *big.
 	em.commonDenominator = denom
 }
 
-// SetExchangeValueOf set the specified value as denominator value for that speciffic currency.
-// This function should return error if the currency specified is not exist.
+// SetExchangeValueOf set the specified value as denominator value for that speciffic Currency.
+// This function should return error if the Currency specified is not exist.
 func (em *InMemoryExchangeManager) SetExchangeValueOf(context context.Context, currency string, exchange *big.Float, author string) error {
 	if exist, err := em.IsCurrencyExist(context, currency); err == nil {
 		if exist {
@@ -808,8 +808,8 @@ func (em *InMemoryExchangeManager) SetExchangeValueOf(context context.Context, c
 	}
 }
 
-// GetExchangeValueOf get the denominator value of the specified currency.
-// Error should be returned if the specified currency is not exist.
+// GetExchangeValueOf get the denominator value of the specified Currency.
+// Error should be returned if the specified Currency is not exist.
 func (em *InMemoryExchangeManager) GetExchangeValueOf(context context.Context, currency string) (*big.Float, error) {
 	if exist, err := em.IsCurrencyExist(context, currency); err == nil {
 		if exist {
@@ -821,9 +821,9 @@ func (em *InMemoryExchangeManager) GetExchangeValueOf(context context.Context, c
 	}
 }
 
-// Get the currency exchange rate for exchanging between the two currency.
-// if any of the currency is not exist, an error should be returned.
-// if from and to currency is equal, this must return 1.0
+// Get the Currency exchange rate for exchanging between the two Currency.
+// if any of the Currency is not exist, an error should be returned.
+// if from and to Currency is equal, this must return 1.0
 func (em *InMemoryExchangeManager) CalculateExchangeRate(context context.Context, fromCurrency, toCurrency string) (*big.Float, error) {
 	from, err := em.GetExchangeValueOf(context, fromCurrency)
 	if err != nil {
@@ -839,9 +839,9 @@ func (em *InMemoryExchangeManager) CalculateExchangeRate(context context.Context
 	return m3, nil
 }
 
-// Get the currency exchange value for the amount of fromCurrency into toCurrency.
-// If any of the currency is not exist, an error should be returned.
-// if from and to currency is equal, the returned amount must be equal to the amount in the argument.
+// Get the Currency exchange value for the Amount of fromCurrency into toCurrency.
+// If any of the Currency is not exist, an error should be returned.
+// if from and to Currency is equal, the returned Amount must be equal to the Amount in the argument.
 func (em *InMemoryExchangeManager) CalculateExchange(context context.Context, fromCurrency, toCurrency string, amount int64) (int64, error) {
 	exchange, err := em.CalculateExchangeRate(context, fromCurrency, toCurrency)
 	if err != nil {

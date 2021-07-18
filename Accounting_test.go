@@ -24,7 +24,7 @@ func TestAccounting_CreateNewAccount(t *testing.T) {
 		},
 	}
 
-	account, err := acc.CreateNewAccount(ctx, "Test Account", "Gold base test user account", "1.1", "GOLD", CREDIT, "aCreator")
+	account, err := acc.CreateNewAccount(ctx, "", "Test Account", "Gold base test user account", "1.1", "GOLD", CREDIT, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
@@ -70,19 +70,19 @@ func TestAccounting_CreateNewJournal(t *testing.T) {
 		},
 	}
 
-	goldLoan, err := acc.CreateNewAccount(ctx, "Gold Loan", "Gold base loan reserve", "1.1", "GOLD", DEBIT, "aCreator")
+	goldLoan, err := acc.CreateNewAccount(ctx, "", "Gold Loan", "Gold base loan reserve", "1.1", "GOLD", DEBIT, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
 	}
 
-	alphaCreditor, err := acc.CreateNewAccount(ctx, "Gold Creditor Alpha", "Gold base debitor alpha", "2.1", "GOLD", CREDIT, "aCreator")
+	alphaCreditor, err := acc.CreateNewAccount(ctx, "", "Gold Creditor Alpha", "Gold base debitor alpha", "2.1", "GOLD", CREDIT, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
 	}
 
-	betaDebitor, err := acc.CreateNewAccount(ctx, "Gold Debitor Alpha", "Gold base creditor beta", "3.1", "GOLD", DEBIT, "aCreator")
+	betaDebitor, err := acc.CreateNewAccount(ctx, "", "Gold Debitor Alpha", "Gold base creditor beta", "3.1", "GOLD", DEBIT, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()
