@@ -36,10 +36,10 @@ func (acc *Accounting) GetUniqueIDGenerator() UniqueIDGenerator {
 	return acc.uniqueIDGenerator
 }
 
-func (acc *Accounting) CreateNewAccount(context context.Context, accountNumber, name, description, coa string, currency string, alignment TransactionType, creator string) (Account, error) {
+func (acc *Accounting) CreateNewAccount(context context.Context, accountNumber, name, description, coa string, currency string, alignment Alignment, creator string) (Account, error) {
 	account := acc.GetAccountManager().NewAccount(context).
 		SetName(name).SetDescription(description).SetCOA(coa).
-		SetCurrency(currency).SetBaseTransactionType(alignment).
+		SetCurrency(currency).SetAlignment(alignment).
 		SetCreateBy(creator).SetCreateTime(time.Now())
 	if len(accountNumber) == 0 {
 		account.SetAccountNumber(acc.GetUniqueIDGenerator().NewUniqueID())
@@ -56,7 +56,7 @@ func (acc *Accounting) CreateNewAccount(context context.Context, accountNumber, 
 type TransactionInfo struct {
 	AccountNumber string
 	Description   string
-	TxType        TransactionType
+	TxType        Alignment
 	Amount        int64
 }
 
@@ -69,11 +69,11 @@ func (acc *Accounting) CreateNewJournal(context context.Context, description str
 
 	transacs := make([]Transaction, 0)
 
-	// make sure all transactions have accounts of the same Currency
+	// make sure all Transactions have accounts of the same Currency
 	for _, txinfo := range transactions {
 		newTransaction := acc.GetTransactionManager().NewTransaction(context).SetCreateBy(creator).SetCreateTime(time.Now()).
 			SetDescription(txinfo.Description).SetAccountNumber(txinfo.AccountNumber).SetAmount(txinfo.Amount).
-			SetTransactionTime(time.Now()).SetTransactionType(txinfo.TxType).SetTransactionID(acc.GetUniqueIDGenerator().NewUniqueID())
+			SetTransactionTime(time.Now()).SetAlignment(txinfo.TxType).SetTransactionID(acc.GetUniqueIDGenerator().NewUniqueID())
 
 		transacs = append(transacs, newTransaction)
 	}
@@ -99,16 +99,16 @@ func (acc *Accounting) CreateReversal(context context.Context, description strin
 
 	transacs := make([]Transaction, 0)
 
-	// make sure all transactions have accounts of the same Currency
+	// make sure all Transactions have accounts of the same Currency
 	for _, txinfo := range reversed.GetTransactions() {
 		tx := DEBIT
-		if txinfo.GetTransactionType() == DEBIT {
+		if txinfo.GetAlignment() == DEBIT {
 			tx = CREDIT
 		}
 
 		newTransaction := acc.GetTransactionManager().NewTransaction(context).SetCreateBy(creator).SetCreateTime(time.Now()).
 			SetDescription(fmt.Sprintf("%s - reversed", txinfo.GetDescription())).SetAccountNumber(txinfo.GetAccountNumber()).
-			SetTransactionTime(time.Now()).SetTransactionType(tx).SetTransactionID(acc.GetUniqueIDGenerator().NewUniqueID())
+			SetTransactionTime(time.Now()).SetAlignment(tx).SetTransactionID(acc.GetUniqueIDGenerator().NewUniqueID())
 
 		transacs = append(transacs, newTransaction)
 	}

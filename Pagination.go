@@ -3,7 +3,7 @@ package acccore
 // Sort define a sorting information, it specifies the column should be sorted and whether it should be ASCENDING or
 // DESCENDING
 type Sort struct {
-	// Column name to sort
+	// Column Name to sort
 	Column string
 
 	// Ascending define the ordering, `true` means ASCENDING, `false` means DESCENDING
