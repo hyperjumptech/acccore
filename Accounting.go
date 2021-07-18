@@ -36,12 +36,16 @@ func (acc *Accounting) GetUniqueIDGenerator() UniqueIDGenerator {
 	return acc.uniqueIDGenerator
 }
 
-func (acc *Accounting) CreateNewAccount(context context.Context, name, description, coa string, currency string, alignment TransactionType, creator string) (Account, error) {
+func (acc *Accounting) CreateNewAccount(context context.Context, accountNumber, name, description, coa string, currency string, alignment TransactionType, creator string) (Account, error) {
 	account := acc.GetAccountManager().NewAccount(context).
 		SetName(name).SetDescription(description).SetCOA(coa).
 		SetCurrency(currency).SetBaseTransactionType(alignment).
-		SetAccountNumber(acc.GetUniqueIDGenerator().NewUniqueID()).
 		SetCreateBy(creator).SetCreateTime(time.Now())
+	if len(accountNumber) == 0 {
+		account.SetAccountNumber(acc.GetUniqueIDGenerator().NewUniqueID())
+	} else {
+		account.SetAccountNumber(accountNumber)
+	}
 	err := acc.GetAccountManager().PersistAccount(context, account)
 	if err != nil {
 		return nil, err
