@@ -54,6 +54,16 @@ type InMemoryTransactionRecords struct {
 	createBy        string
 }
 
+type InMemoryCurrencyRecords struct {
+	code       string
+	name       string
+	exchange   float64
+	createTime time.Time
+	createBy   string
+	updateTime time.Time
+	updateBy   string
+}
+
 var (
 	// InMemoryJournalTable the simulated Journal table
 	InMemoryJournalTable map[string]*InMemoryJournalRecords
@@ -63,6 +73,9 @@ var (
 
 	// InMemoryTransactionTable the simulated Transaction table
 	InMemoryTransactionTable map[string]*InMemoryTransactionRecords
+
+	// InMemoryCurrencyTable the simulated Currency table
+	InMemoryCurrencyTable map[string]*InMemoryCurrencyRecords
 )
 
 func init() {
@@ -73,6 +86,7 @@ func ClearInMemoryTables() {
 	InMemoryJournalTable = make(map[string]*InMemoryJournalRecords, 0)
 	InMemoryAccountTable = make(map[string]*InMemoryAccountRecord, 0)
 	InMemoryTransactionTable = make(map[string]*InMemoryTransactionRecords, 0)
+	InMemoryCurrencyTable = make(map[string]*InMemoryCurrencyRecords, 0)
 }
 
 // InMemoryJournalManager implementation of JournalManager using inmemory Journal table map
@@ -763,24 +777,22 @@ func (tm *InMemoryTransactionManager) RenderTransactionsOnAccount(context contex
 	return buff.String(), err
 }
 
-func NewInMemoryExchangeManager(exchangeMap map[string]*big.Float) ExchangeManager {
+func NewInMemoryExchangeManager() ExchangeManager {
 	return &InMemoryExchangeManager{
 		commonDenominator: big.NewFloat(1.0),
-		exchangeMap:       exchangeMap,
 	}
 }
 
 // InMemoryExchangeManager is a base implementation of ExchangeManager.
 type InMemoryExchangeManager struct {
 	commonDenominator *big.Float
-	exchangeMap       map[string]*big.Float
 }
 
 // IsCurrencyExist will check in the exchange system for a Currency existance
 // non-existent Currency means that the Currency is not supported.
 // error should be thrown if only there's an underlying error such as db error.
 func (em *InMemoryExchangeManager) IsCurrencyExist(context context.Context, currency string) (bool, error) {
-	_, exist := em.exchangeMap[currency]
+	_, exist := InMemoryCurrencyTable[currency]
 	return exist, nil
 }
 
@@ -794,30 +806,66 @@ func (em *InMemoryExchangeManager) SetDenom(context context.Context, denom *big.
 	em.commonDenominator = denom
 }
 
-// SetExchangeValueOf set the specified value as denominator value for that speciffic Currency.
-// This function should return error if the Currency specified is not exist.
-func (em *InMemoryExchangeManager) SetExchangeValueOf(context context.Context, currency string, exchange *big.Float, author string) error {
-	if exist, err := em.IsCurrencyExist(context, currency); err == nil {
-		if exist {
-			em.exchangeMap[currency] = exchange
-			return nil
+// GetCurrency retrieve currency data indicated by the code argument
+func (em *InMemoryExchangeManager) GetCurrency(context context.Context, code string) (Currency, error) {
+	if curRec, exist := InMemoryCurrencyTable[code]; exist {
+		cur := &BaseCurrency{
+			Code:       curRec.code,
+			Name:       curRec.name,
+			Exchange:   curRec.exchange,
+			CreateTime: curRec.createTime,
+			CreateBy:   curRec.createBy,
+			UpdateTime: curRec.updateTime,
+			UpdateBy:   curRec.updateBy,
 		}
-		return ErrCurrencyNotFound
+		return cur, nil
 	} else {
-		return err
+		return nil, ErrCurrencyNotFound
 	}
 }
 
-// GetExchangeValueOf get the denominator value of the specified Currency.
+// CreateCurrency set the specified value as denominator value for that speciffic Currency.
+// This function should return error if the Currency specified is not exist.
+func (em *InMemoryExchangeManager) CreateCurrency(context context.Context, code, name string, exchange *big.Float, author string) (Currency, error) {
+	if _, exist := InMemoryCurrencyTable[code]; exist {
+		return nil, ErrCurrencyAlreadyPersisted
+	}
+	exc, _ := exchange.Float64()
+	bc := &InMemoryCurrencyRecords{
+		code:       code,
+		name:       name,
+		exchange:   exc,
+		createTime: time.Now(),
+		createBy:   author,
+		updateTime: time.Now(),
+		updateBy:   author,
+	}
+	InMemoryCurrencyTable[code] = bc
+	return &BaseCurrency{
+		Code:       code,
+		Name:       name,
+		Exchange:   exc,
+		CreateTime: time.Now(),
+		CreateBy:   author,
+		UpdateTime: time.Now(),
+		UpdateBy:   author,
+	}, nil
+}
+
+// UpdateCurrency updates the currency data
 // Error should be returned if the specified Currency is not exist.
-func (em *InMemoryExchangeManager) GetExchangeValueOf(context context.Context, currency string) (*big.Float, error) {
-	if exist, err := em.IsCurrencyExist(context, currency); err == nil {
-		if exist {
-			return em.exchangeMap[currency], nil
-		}
-		return nil, ErrCurrencyNotFound
+func (em *InMemoryExchangeManager) UpdateCurrency(context context.Context, code string, currency Currency, author string) error {
+	if curr, exist := InMemoryCurrencyTable[code]; !exist {
+		return ErrCurrencyNotFound
 	} else {
-		return nil, err
+		curr.exchange = currency.GetExchange()
+		curr.name = currency.GetName()
+		curr.exchange = currency.GetExchange()
+		curr.updateBy = author
+		curr.updateTime = time.Now()
+
+		currency.SetCode(code)
+		return nil
 	}
 }
 
@@ -825,16 +873,16 @@ func (em *InMemoryExchangeManager) GetExchangeValueOf(context context.Context, c
 // if any of the Currency is not exist, an error should be returned.
 // if from and to Currency is equal, this must return 1.0
 func (em *InMemoryExchangeManager) CalculateExchangeRate(context context.Context, fromCurrency, toCurrency string) (*big.Float, error) {
-	from, err := em.GetExchangeValueOf(context, fromCurrency)
+	from, err := em.GetCurrency(context, fromCurrency)
 	if err != nil {
 		return nil, err
 	}
-	to, err := em.GetExchangeValueOf(context, toCurrency)
+	to, err := em.GetCurrency(context, toCurrency)
 	if err != nil {
 		return nil, err
 	}
-	m1 := new(big.Float).Quo(em.GetDenom(context), from)
-	m2 := new(big.Float).Mul(m1, to)
+	m1 := new(big.Float).Quo(em.GetDenom(context), big.NewFloat(from.GetExchange()))
+	m2 := new(big.Float).Mul(m1, big.NewFloat(to.GetExchange()))
 	m3 := new(big.Float).Quo(m2, em.GetDenom(context))
 	return m3, nil
 }
@@ -850,4 +898,22 @@ func (em *InMemoryExchangeManager) CalculateExchange(context context.Context, fr
 	m1 := new(big.Float).Mul(exchange, big.NewFloat(float64(amount)))
 	f, _ := m1.Float64()
 	return int64(f), nil
+}
+
+// ListCurrencies will list all currencies.
+func (em *InMemoryExchangeManager) ListCurrencies(context context.Context) ([]Currency, error) {
+	ret := make([]Currency, 0)
+	for _, cur := range InMemoryCurrencyTable {
+		rec := &BaseCurrency{
+			Code:       cur.code,
+			Name:       cur.name,
+			Exchange:   cur.exchange,
+			CreateTime: cur.createTime,
+			CreateBy:   cur.createBy,
+			UpdateTime: cur.updateTime,
+			UpdateBy:   cur.updateBy,
+		}
+		ret = append(ret, rec)
+	}
+	return ret, nil
 }
