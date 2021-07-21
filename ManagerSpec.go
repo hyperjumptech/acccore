@@ -33,7 +33,8 @@ var (
 
 	ErrTransactionNotFound = fmt.Errorf("transaction AccountNumber not in database")
 
-	ErrCurrencyNotFound = fmt.Errorf("Currency not found")
+	ErrCurrencyNotFound         = fmt.Errorf("currency not found")
+	ErrCurrencyAlreadyPersisted = fmt.Errorf("currency already persisted")
 )
 
 // JournalManager is interface used of managing journals
@@ -149,12 +150,17 @@ type ExchangeManager interface {
 	// SetDenom set the current common denominator value into the specified value
 	SetDenom(context context.Context, denom *big.Float)
 
-	// SetExchangeValueOf set the specified value as denominator value for that speciffic Currency.
+	// ListCurrencies will list all currencies.
+	ListCurrencies(context context.Context) ([]Currency, error)
+
+	// GetCurrency retrieve currency data indicated by the code argument
+	GetCurrency(context context.Context, code string) (Currency, error)
+	// CreateCurrency set the specified value as denominator value for that speciffic Currency.
 	// This function should return error if the Currency specified is not exist.
-	SetExchangeValueOf(context context.Context, currency string, exchange *big.Float, author string) error
-	// GetExchangeValueOf get the denominator value of the specified Currency.
+	CreateCurrency(context context.Context, code, name string, exchange *big.Float, author string) (Currency, error)
+	// UpdateCurrency updates the currency data
 	// Error should be returned if the specified Currency is not exist.
-	GetExchangeValueOf(context context.Context, currency string) (*big.Float, error)
+	UpdateCurrency(context context.Context, code string, currency Currency, author string) error
 
 	// Get the Currency exchange rate for exchanging between the two Currency.
 	// if any of the Currency is not exist, an error should be returned.

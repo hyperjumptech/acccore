@@ -386,3 +386,94 @@ func (acc *BaseAccount) SetUpdateBy(editor string) Account {
 	acc.UpdateBy = editor
 	return acc
 }
+
+type BaseCurrency struct {
+	Code       string    `json:"code"`
+	Name       string    `json:"name"`
+	Exchange   float64   `json:"exchange"`
+	CreateTime time.Time `json:"create_time"`
+	CreateBy   string    `json:"create_by"`
+	UpdateTime time.Time `json:"update_time"`
+	UpdateBy   string    `json:"update_by"`
+}
+
+// GetCode get the currency short code. e.g. USD
+func (bc *BaseCurrency) GetCode() string {
+	return bc.Code
+}
+
+// SetCode set the currency short code. e.g. USD
+func (bc *BaseCurrency) SetCode(code string) Currency {
+	bc.Code = code
+	return bc
+}
+
+// GetName get the textual name of the currency. e.g. United States Dollar
+func (bc *BaseCurrency) GetName() string {
+	return bc.Name
+}
+
+// SetName set the currency textual name of the currency. e.g. United States Dollar
+func (bc *BaseCurrency) SetName(name string) Currency {
+	bc.Name = name
+	return bc
+}
+
+// GetExchange get the exchange unit of this currency toward the denominator value
+func (bc *BaseCurrency) GetExchange() float64 {
+	return bc.Exchange
+}
+
+// SetExchange set the exchange unit of this currency toward the denominator value
+func (bc *BaseCurrency) SetExchange(exchange float64) Currency {
+	bc.Exchange = exchange
+	return bc
+}
+
+// GetCreateTime function should return the time when this account is created/recorded.
+// this function serves as audit trail.
+func (bc *BaseCurrency) GetCreateTime() time.Time {
+	return bc.CreateTime
+}
+
+// SetCreateTime will set new creation time
+func (bc *BaseCurrency) SetCreateTime(newTime time.Time) Currency {
+	bc.CreateTime = newTime
+	return bc
+}
+
+// GetCreateBy function should return the user AccountNumber or some identification of who is creating this account.
+// this function serves as audit trail.
+func (bc *BaseCurrency) GetCreateBy() string {
+	return bc.CreateBy
+}
+
+// SetCreateBy will set the creator Name
+func (bc *BaseCurrency) SetCreateBy(creator string) Currency {
+	bc.CreateBy = creator
+	return bc
+}
+
+// GetUpdateTime function should return the time when this account is updated.
+// this function serves as audit trail.
+func (bc *BaseCurrency) GetUpdateTime() time.Time {
+	return bc.UpdateTime
+}
+
+// SetUpdateTime will set the last update time.
+func (bc *BaseCurrency) SetUpdateTime(newTime time.Time) Currency {
+	bc.UpdateTime = newTime
+	return bc
+}
+
+// GetUpdateBy function should return the user AccountNumber or some identification of who is updating this account.
+// this function serves as audit trail.
+func (bc *BaseCurrency) GetUpdateBy() string {
+	return bc.UpdateBy
+}
+
+// SetUpdateBy will set the updater Name
+func (bc *BaseCurrency) SetUpdateBy(editor string) Currency {
+	bc.UpdateBy = editor
+	return bc
+}
