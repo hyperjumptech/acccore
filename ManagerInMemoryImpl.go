@@ -640,7 +640,7 @@ func (am *InMemoryAccountManager) ListAccountByCOA(context context.Context, coa 
 func (am *InMemoryAccountManager) FindAccounts(context context.Context, nameLike string, request PageRequest) (PageResult, []Account, error) {
 	resultSlice := make([]*InMemoryAccountRecord, 0)
 	for _, r := range InMemoryAccountTable {
-		if strings.Contains(strings.ToUpper(r.name), strings.ToUpper(nameLike)) {
+		if strings.Contains(strings.ToUpper(r.name), strings.ToUpper(strings.ReplaceAll(nameLike, "%", ""))) {
 			resultSlice = append(resultSlice, r)
 		}
 	}
