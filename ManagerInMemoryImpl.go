@@ -639,8 +639,9 @@ func (am *InMemoryAccountManager) ListAccountByCOA(context context.Context, coa 
 // this search should  be case insensitive.
 func (am *InMemoryAccountManager) FindAccounts(context context.Context, nameLike string, request PageRequest) (PageResult, []Account, error) {
 	resultSlice := make([]*InMemoryAccountRecord, 0)
+	lookup := strings.ToUpper(strings.ReplaceAll(nameLike, "%", ""))
 	for _, r := range InMemoryAccountTable {
-		if strings.Contains(strings.ToUpper(r.name), strings.ToUpper(strings.ReplaceAll(nameLike, "%", ""))) {
+		if strings.Contains(strings.ToUpper(r.name), lookup) {
 			resultSlice = append(resultSlice, r)
 		}
 	}
