@@ -861,18 +861,19 @@ func (em *InMemoryExchangeManager) CreateCurrency(context context.Context, code,
 // UpdateCurrency updates the currency data
 // Error should be returned if the specified Currency is not exist.
 func (em *InMemoryExchangeManager) UpdateCurrency(context context.Context, code string, currency Currency, author string) error {
-	if curr, exist := InMemoryCurrencyTable[code]; !exist {
+	curr, exist := InMemoryCurrencyTable[code]
+	if !exist {
 		return ErrCurrencyNotFound
-	} else {
-		curr.exchange = currency.GetExchange()
-		curr.name = currency.GetName()
-		curr.exchange = currency.GetExchange()
-		curr.updateBy = author
-		curr.updateTime = time.Now()
-
-		currency.SetCode(code)
-		return nil
 	}
+	curr.exchange = currency.GetExchange()
+	curr.name = currency.GetName()
+	curr.exchange = currency.GetExchange()
+	curr.updateBy = author
+	curr.updateTime = time.Now()
+
+	currency.SetCode(code)
+	return nil
+
 }
 
 // CalculateExchangeRate gets the Currency exchange rate for exchanging between the two Currency.

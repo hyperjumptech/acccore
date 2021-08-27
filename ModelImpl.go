@@ -387,6 +387,7 @@ func (acc *BaseAccount) SetUpdateBy(editor string) Account {
 	return acc
 }
 
+// BaseCurrency is the currency object
 type BaseCurrency struct {
 	Code       string    `json:"code"`
 	Name       string    `json:"name"`
