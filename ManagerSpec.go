@@ -9,7 +9,7 @@ import (
 
 var (
 	ErrJournalNil                          = fmt.Errorf("journal is nil")
-	ErrJournalMissingId                    = fmt.Errorf("journal is missing AccountNumber")
+	ErrJournalMissingID                    = fmt.Errorf("journal is missing AccountNumber")
 	ErrJournalNoTransaction                = fmt.Errorf("journal contains no Transactions")
 	ErrJournalMissingAuthor                = fmt.Errorf("journal author is not known")
 	ErrJournalAlreadyPersisted             = fmt.Errorf("journal is already persisted")
@@ -19,13 +19,13 @@ var (
 	ErrJournalTransactionMixCurrency       = fmt.Errorf("journal Transactions contains mixed currencies, all transaction in a journal must belong to the same Currency")
 	ErrJournalTransactionAccountNotPersist = fmt.Errorf("journal Transactions revering to non-existent account")
 	ErrJournalTransactionAccountDuplicate  = fmt.Errorf("multiple journal Transactions belongs to the same account")
-	ErrJournalIdNotFound                   = fmt.Errorf("journal with specified ID not in database")
+	ErrJournalIDNotFound                   = fmt.Errorf("journal with specified ID not in database")
 	ErrJournalLoadReversalInconsistent     = fmt.Errorf("reversed journal reverence to unexistent journal")
 	ErrJournalCanNotDoubleReverse          = fmt.Errorf("journal can only reversed once")
 
 	ErrAccountAlreadyPersisted   = fmt.Errorf("account is already persisted")
 	ErrAccountIsNotPersisted     = fmt.Errorf("account is not persisted")
-	ErrAccountIdNotFound         = fmt.Errorf("account AccountNumber not in database")
+	ErrAccountIDNotFound         = fmt.Errorf("account AccountNumber not in database")
 	ErrAccountMissingID          = fmt.Errorf("account AccountNumber or number is not provided")
 	ErrAccountMissingName        = fmt.Errorf("account Name is not provided")
 	ErrAccountMissingDescription = fmt.Errorf("account Description is not provided")
@@ -33,7 +33,7 @@ var (
 
 	ErrTransactionNotFound = fmt.Errorf("transaction AccountNumber not in database")
 
-	ErrCurrencyNotFound = fmt.Errorf("Currency not found")
+	ErrCurrencyNotFound = fmt.Errorf("currency not found")
 )
 
 // JournalManager is interface used of managing journals
@@ -67,15 +67,15 @@ type JournalManager interface {
 	// and this function should simply return nil.
 	CancelJournal(context context.Context, journalToCancel Journal) error
 
-	// IsJournalIdReversed check if the journal with specified ID has been reversed
-	IsJournalIdReversed(context context.Context, journalId string) (bool, error)
+	// IsJournalIDReversed check if the journal with specified ID has been reversed
+	IsJournalIDReversed(context context.Context, journalID string) (bool, error)
 
-	// IsTransactionIdExist will check if an Transaction ID/number is exist in the database.
-	IsJournalIdExist(context context.Context, journalId string) (bool, error)
+	// IsJournalIDExist will check if an Journal ID/number is exist in the database.
+	IsJournalIDExist(context context.Context, journalID string) (bool, error)
 
-	// GetJournalById retrieved a Journal information identified by its ID.
+	// GetJournalByID retrieved a Journal information identified by its ID.
 	// the provided ID must be exactly the same, not uses the LIKE select expression.
-	GetJournalById(context context.Context, journalId string) (Journal, error)
+	GetJournalByID(context context.Context, journalID string) (Journal, error)
 
 	// ListJournals retrieve list of journals with transaction date between the `from` and `until` time range inclusive.
 	// This function uses pagination.
@@ -90,11 +90,11 @@ type TransactionManager interface {
 	// NewTransaction will create new blank un-persisted Transaction
 	NewTransaction(context context.Context) Transaction
 
-	// IsTransactionIdExist will check if an Transaction ID/number is exist in the database.
-	IsTransactionIdExist(context context.Context, id string) (bool, error)
+	// IsTransactionIDExist will check if an Transaction ID/number is exist in the database.
+	IsTransactionIDExist(context context.Context, id string) (bool, error)
 
-	// GetTransactionById will retrieve one single transaction that identified by some ID
-	GetTransactionById(context context.Context, id string) (Transaction, error)
+	// GetTransactionByID will retrieve one single transaction that identified by some ID
+	GetTransactionByID(context context.Context, id string) (Transaction, error)
 
 	// ListTransactionsWithAccount retrieves list of Transactions that belongs to this account
 	// that transaction happens between the `from` and `until` time range.
@@ -118,11 +118,11 @@ type AccountManager interface {
 	// This update account function will fail if the account ID/number is not existing in the database.
 	UpdateAccount(context context.Context, AccountToUpdate Account) error
 
-	// IsAccountIdExist will check if an account ID/number is exist in the database.
-	IsAccountIdExist(context context.Context, id string) (bool, error)
+	// IsAccountIDExist will check if an account ID/number is exist in the database.
+	IsAccountIDExist(context context.Context, id string) (bool, error)
 
-	// GetAccountById retrieve an account information by specifying the ID/number
-	GetAccountById(context context.Context, id string) (Account, error)
+	// GetAccountByID retrieve an account information by specifying the ID/number
+	GetAccountByID(context context.Context, id string) (Account, error)
 
 	// ListAccounts list all account in the database.
 	// This function uses pagination

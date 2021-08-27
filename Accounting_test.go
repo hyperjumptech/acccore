@@ -29,7 +29,7 @@ func TestAccounting_CreateNewAccount(t *testing.T) {
 		t.Error(err.Error())
 		t.FailNow()
 	}
-	exist, err := acc.accountManager.IsAccountIdExist(ctx, account.GetAccountNumber())
+	exist, err := acc.accountManager.IsAccountIDExist(ctx, account.GetAccountNumber())
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()

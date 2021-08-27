@@ -21,19 +21,19 @@ func TestInMemoryExchangeManager_CalculateExchange(t *testing.T) {
 		"COPPER":   big.NewFloat(1.0),
 	})
 	testData := []*ExchangeTest{
-		&ExchangeTest{
+		{
 			from:       "GOLD",
 			fromAmount: 1000,
 			to:         "PLATINUM",
 			toAmount:   100,
 		},
-		&ExchangeTest{
+		{
 			from:       "GOLD",
 			fromAmount: 1000,
 			to:         "SILVER",
 			toAmount:   10000,
 		},
-		&ExchangeTest{
+		{
 			from:       "GOLD",
 			fromAmount: 1000,
 			to:         "GOLD",
