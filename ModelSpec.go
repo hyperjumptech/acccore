@@ -195,3 +195,45 @@ type Account interface {
 	// SetUpdateBy will set the updater Name
 	SetUpdateBy(editor string) Account
 }
+
+// Currency interface provides base structure of Currency
+type Currency interface {
+	// GetCode get the currency short code. e.g. USD
+	GetCode() string
+	// SetCode set the currency short code. e.g. USD
+	SetCode(code string) Currency
+
+	// GetName get the textual name of the currency. e.g. United States Dollar
+	GetName() string
+	// SetName set the currency textual name of the currency. e.g. United States Dollar
+	SetName(name string) Currency
+
+	// GetExchange get the exchange unit of this currency toward the denominator value
+	GetExchange() float64
+	// SetExchange set the exchange unit of this currency toward the denominator value
+	SetExchange(exchange float64) Currency
+
+	// GetCreateTime function should return the time when this account is created/recorded.
+	// this function serves as audit trail.
+	GetCreateTime() time.Time
+	// SetCreateTime will set new creation time
+	SetCreateTime(newTime time.Time) Currency
+
+	// GetCreateBy function should return the user AccountNumber or some identification of who is creating this account.
+	// this function serves as audit trail.
+	GetCreateBy() string
+	// SetCreateBy will set the creator Name
+	SetCreateBy(creator string) Currency
+
+	// GetUpdateTime function should return the time when this account is updated.
+	// this function serves as audit trail.
+	GetUpdateTime() time.Time
+	// SetUpdateTime will set the last update time.
+	SetUpdateTime(newTime time.Time) Currency
+
+	// GetUpdateBy function should return the user AccountNumber or some identification of who is updating this account.
+	// this function serves as audit trail.
+	GetUpdateBy() string
+	// SetUpdateBy will set the updater Name
+	SetUpdateBy(editor string) Currency
+}

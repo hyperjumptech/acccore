@@ -14,12 +14,12 @@ type ExchangeTest struct {
 }
 
 func TestInMemoryExchangeManager_CalculateExchange(t *testing.T) {
-	exchangeManager := NewInMemoryExchangeManager(map[string]*big.Float{
-		"PLATINUM": big.NewFloat(0.001),
-		"GOLD":     big.NewFloat(0.01),
-		"SILVER":   big.NewFloat(0.1),
-		"COPPER":   big.NewFloat(1.0),
-	})
+	ctx := context.Background()
+	exchangeManager := NewInMemoryExchangeManager()
+	_, _ = exchangeManager.CreateCurrency(ctx, "PLATINUM", "Platinum", big.NewFloat(0.001), "superman")
+	_, _ = exchangeManager.CreateCurrency(ctx, "GOLD", "Gold", big.NewFloat(0.01), "superman")
+	_, _ = exchangeManager.CreateCurrency(ctx, "SILVER", "Silver", big.NewFloat(0.1), "superman")
+	_, _ = exchangeManager.CreateCurrency(ctx, "COPPER", "Copper", big.NewFloat(1.0), "superman")
 	testData := []*ExchangeTest{
 		{
 			from:       "GOLD",
@@ -40,7 +40,6 @@ func TestInMemoryExchangeManager_CalculateExchange(t *testing.T) {
 			toAmount:   1000,
 		},
 	}
-	ctx := context.Background()
 	for idx, data := range testData {
 		result, err := exchangeManager.CalculateExchange(ctx, data.from, data.to, data.fromAmount)
 		if err != nil {

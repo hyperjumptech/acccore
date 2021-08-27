@@ -49,6 +49,8 @@ const (
 	UpperAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	// Numbers is not letters
 	Numbers = "1234567890"
+	// Symbols non-letters non-numbers
+	Symbols = "!@#$%^&*(){}[]|;:<>,./?~"
 )
 
 // RandomGenUniqueIDGenerator the unique ID generator using NANO second number.
@@ -57,6 +59,7 @@ type RandomGenUniqueIDGenerator struct {
 	LowerAlpha    bool
 	UpperAlpha    bool
 	Numeric       bool
+	Symbols       bool
 	CharSetBuffer []byte
 }
 
@@ -76,6 +79,9 @@ func (gen *RandomGenUniqueIDGenerator) NewUniqueID() string {
 			}
 			if gen.Numeric {
 				buff.WriteString(Numbers)
+			}
+			if gen.Symbols {
+				buff.WriteString(Symbols)
 			}
 		}
 		gen.CharSetBuffer = buff.Bytes()
