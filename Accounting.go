@@ -16,6 +16,7 @@ func NewAccounting(accountManager AccountManager, transactionManager Transaction
 	}
 }
 
+// Accounting is the account detail structure
 type Accounting struct {
 	accountManager     AccountManager
 	transactionManager TransactionManager
@@ -23,19 +24,27 @@ type Accounting struct {
 	uniqueIDGenerator  UniqueIDGenerator
 }
 
+// GetAccountManager returns account manager
 func (acc *Accounting) GetAccountManager() AccountManager {
 	return acc.accountManager
 }
+
+// GetTransactionManager returns transaction manager
 func (acc *Accounting) GetTransactionManager() TransactionManager {
 	return acc.transactionManager
 }
+
+// GetJournalManager returns journal manager
 func (acc *Accounting) GetJournalManager() JournalManager {
 	return acc.journalManager
 }
+
+// GetUniqueIDGenerator returns id generator
 func (acc *Accounting) GetUniqueIDGenerator() UniqueIDGenerator {
 	return acc.uniqueIDGenerator
 }
 
+// CreateNewAccount creates a new account
 func (acc *Accounting) CreateNewAccount(context context.Context, accountNumber, name, description, coa string, currency string, alignment Alignment, creator string) (Account, error) {
 	account := acc.GetAccountManager().NewAccount(context).
 		SetName(name).SetDescription(description).SetCOA(coa).
@@ -53,6 +62,7 @@ func (acc *Accounting) CreateNewAccount(context context.Context, accountNumber, 
 	return account, nil
 }
 
+// TransactionInfo transaction info details
 type TransactionInfo struct {
 	AccountNumber string
 	Description   string
@@ -60,6 +70,7 @@ type TransactionInfo struct {
 	Amount        int64
 }
 
+// CreateNewJournal creates a new journal
 func (acc *Accounting) CreateNewJournal(context context.Context, description string, transactions []TransactionInfo, creator string) (Journal, error) {
 	journal := acc.GetJournalManager().NewJournal(context).SetDescription(description)
 
@@ -92,6 +103,7 @@ func (acc *Accounting) CreateNewJournal(context context.Context, description str
 	return journal, nil
 }
 
+// CreateReversal creats a reversal
 func (acc *Accounting) CreateReversal(context context.Context, description string, reversed Journal, creator string) (Journal, error) {
 	journal := acc.GetJournalManager().NewJournal(context).SetDescription(description)
 	journal.SetJournalID(acc.GetUniqueIDGenerator().NewUniqueID()).SetCreateBy(creator).SetCreateTime(time.Now()).SetJournalingTime(time.Now()).

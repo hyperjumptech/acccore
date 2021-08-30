@@ -21,19 +21,19 @@ func TestInMemoryExchangeManager_CalculateExchange(t *testing.T) {
 	_, _ = exchangeManager.CreateCurrency(ctx, "SILVER", "Silver", big.NewFloat(0.1), "superman")
 	_, _ = exchangeManager.CreateCurrency(ctx, "COPPER", "Copper", big.NewFloat(1.0), "superman")
 	testData := []*ExchangeTest{
-		&ExchangeTest{
+		{
 			from:       "GOLD",
 			fromAmount: 1000,
 			to:         "PLATINUM",
 			toAmount:   100,
 		},
-		&ExchangeTest{
+		{
 			from:       "GOLD",
 			fromAmount: 1000,
 			to:         "SILVER",
 			toAmount:   10000,
 		},
-		&ExchangeTest{
+		{
 			from:       "GOLD",
 			fromAmount: 1000,
 			to:         "GOLD",

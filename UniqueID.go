@@ -3,9 +3,10 @@ package acccore
 import (
 	"bytes"
 	"fmt"
-	"github.com/google/uuid"
 	"math/rand"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func init() {
@@ -42,10 +43,14 @@ func (gen *NanoSecondUniqueIDGenerator) NewUniqueID() string {
 }
 
 const (
+	// LowerAlphabet list of lowercase letters
 	LowerAlphabet = "abcdefghijklmnopqrstuvwxyz"
+	// UpperAlphabet list of upprcase letters
 	UpperAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	Numbers       = "1234567890"
-	Symbols       = "!@#$%^&*(){}[]|;:<>,./?~"
+	// Numbers is not letters
+	Numbers = "1234567890"
+	// Symbols non-letters non-numbers
+	Symbols = "!@#$%^&*(){}[]|;:<>,./?~"
 )
 
 // RandomGenUniqueIDGenerator the unique ID generator using NANO second number.
@@ -58,10 +63,11 @@ type RandomGenUniqueIDGenerator struct {
 	CharSetBuffer []byte
 }
 
+// NewUniqueID generates unique id
 func (gen *RandomGenUniqueIDGenerator) NewUniqueID() string {
 	var buff bytes.Buffer
 	if gen.CharSetBuffer == nil {
-		if gen.LowerAlpha == false && gen.UpperAlpha == false && gen.Numeric == false {
+		if !gen.LowerAlpha && !gen.UpperAlpha && !gen.Numeric {
 			buff.WriteString(UpperAlphabet)
 			buff.WriteString(Numbers)
 		} else {

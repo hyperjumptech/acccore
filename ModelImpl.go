@@ -138,8 +138,8 @@ func (trx *BaseTransaction) GetTransactionID() string {
 }
 
 // SetTransactionID will set new transaction ID
-func (trx *BaseTransaction) SetTransactionID(newId string) Transaction {
-	trx.TransactionID = newId
+func (trx *BaseTransaction) SetTransactionID(newID string) Transaction {
+	trx.TransactionID = newID
 	return trx
 }
 
@@ -387,6 +387,7 @@ func (acc *BaseAccount) SetUpdateBy(editor string) Account {
 	return acc
 }
 
+// BaseCurrency is the currency object
 type BaseCurrency struct {
 	Code       string    `json:"code"`
 	Name       string    `json:"name"`

@@ -26,7 +26,7 @@ type Journal interface {
 	// GetJournalID would return the journal unique ID
 	GetJournalID() string
 	// SetJournalID will set a new JournalID
-	SetJournalID(newId string) Journal
+	SetJournalID(newID string) Journal
 
 	// GetJournalingTime will return the timestamp of when this journal entry is created
 	GetJournalingTime() time.Time
@@ -81,7 +81,7 @@ type Transaction interface {
 	// GetTransactionID returns the unique ID of this transaction
 	GetTransactionID() string
 	// SetTransactionID will set new transaction ID
-	SetTransactionID(newId string) Transaction
+	SetTransactionID(newID string) Transaction
 
 	// GetTransactionTime returns the timestamp of this transaction
 	GetTransactionTime() time.Time
