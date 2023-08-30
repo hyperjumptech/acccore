@@ -2,6 +2,8 @@ package acccore
 
 import (
 	"context"
+	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -52,6 +54,12 @@ func TestAccounting_CreateNewAccount(t *testing.T) {
 
 }
 
+func TestDecimal(t *testing.T) {
+	pa := decimal.NewFromInt(123)
+	pa = pa.Add(decimal.NewFromInt(1))
+	assert.True(t, pa.Equal(decimal.NewFromInt(124)))
+}
+
 func TestAccounting_CreateNewJournal(t *testing.T) {
 	ClearInMemoryTables()
 
@@ -93,18 +101,22 @@ func TestAccounting_CreateNewJournal(t *testing.T) {
 			AccountNumber: goldLoan.GetAccountNumber(),
 			Description:   "Added Gold Reserve",
 			TxType:        DEBIT,
-			Amount:        1000000,
+			Amount:        decimal.NewFromInt(1000000),
 		},
 		{
 			AccountNumber: alphaCreditor.GetAccountNumber(),
 			Description:   "Added Gold Equity",
 			TxType:        CREDIT,
-			Amount:        1000000,
+			Amount:        decimal.NewFromInt(1000000),
 		},
 	}
 	journal, err := acc.CreateNewJournal(ctx, "Creditor Topup Gold", topupTransactions, "aCreator")
 	if err != nil {
 		t.Error(err.Error())
+		t.FailNow()
+	}
+	if journal == nil {
+		t.Error("No error but journal nil")
 		t.FailNow()
 	}
 	t.Log(acc.journalManager.RenderJournal(ctx, journal))
@@ -114,13 +126,13 @@ func TestAccounting_CreateNewJournal(t *testing.T) {
 			AccountNumber: betaDebitor.GetAccountNumber(),
 			Description:   "Add debitor AR",
 			TxType:        DEBIT,
-			Amount:        200000,
+			Amount:        decimal.NewFromInt(200000),
 		},
 		{
 			AccountNumber: goldLoan.GetAccountNumber(),
 			Description:   "Gold Disbursement",
 			TxType:        CREDIT,
-			Amount:        200000,
+			Amount:        decimal.NewFromInt(200000),
 		},
 	}
 	journal, err = acc.CreateNewJournal(ctx, "GOLD purchase transaction", goldPurchaseTransaction, "aCreator")

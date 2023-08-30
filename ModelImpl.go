@@ -1,20 +1,21 @@
 package acccore
 
 import (
+	"github.com/shopspring/decimal"
 	"time"
 )
 
 // BaseJournal is the base implementation of Journal
 type BaseJournal struct {
-	JournalID       string        `json:"journal_id"`
-	JournalingTime  time.Time     `json:"journaling_time"`
-	Description     string        `json:"description"`
-	Reversal        bool          `json:"reversal"`
-	ReversedJournal Journal       `json:"reversed_journal"`
-	Amount          int64         `json:"amount"`
-	Transactions    []Transaction `json:"transactions"`
-	CreateTime      time.Time     `json:"create_time"`
-	CreatedBy       string        `json:"created_by"`
+	JournalID       string          `json:"journal_id"`
+	JournalingTime  time.Time       `json:"journaling_time"`
+	Description     string          `json:"description"`
+	Reversal        bool            `json:"reversal"`
+	ReversedJournal Journal         `json:"reversed_journal"`
+	Amount          decimal.Decimal `json:"amount"`
+	Transactions    []Transaction   `json:"transactions"`
+	CreateTime      time.Time       `json:"create_time"`
+	CreatedBy       string          `json:"created_by"`
 }
 
 // GetJournalID would return the journal unique ID
@@ -73,12 +74,12 @@ func (journal *BaseJournal) SetReversedJournal(reversedJournal Journal) Journal 
 }
 
 // GetAmount should return the current Amount of total transaction values
-func (journal *BaseJournal) GetAmount() int64 {
+func (journal *BaseJournal) GetAmount() decimal.Decimal {
 	return journal.Amount
 }
 
 // SetAmount will set new total transaction Amount
-func (journal *BaseJournal) SetAmount(newAmount int64) Journal {
+func (journal *BaseJournal) SetAmount(newAmount decimal.Decimal) Journal {
 	journal.Amount = newAmount
 	return journal
 }
@@ -120,16 +121,16 @@ func (journal *BaseJournal) SetCreateBy(creator string) Journal {
 
 // BaseTransaction is the base implementation of Transaction
 type BaseTransaction struct {
-	TransactionID   string    `json:"transaction_id"`
-	TransactionTime time.Time `json:"transaction_time"`
-	AccountNumber   string    `json:"account_number"`
-	JournalID       string    `json:"journal_id"`
-	Description     string    `json:"description"`
-	TransactionType Alignment `json:"transaction_type"`
-	Amount          int64     `json:"amount"`
-	AccountBalance  int64     `json:"account_balance"`
-	CreateTime      time.Time `json:"create_time"`
-	CreateBy        string    `json:"create_by"`
+	TransactionID   string          `json:"transaction_id"`
+	TransactionTime time.Time       `json:"transaction_time"`
+	AccountNumber   string          `json:"account_number"`
+	JournalID       string          `json:"journal_id"`
+	Description     string          `json:"description"`
+	TransactionType Alignment       `json:"transaction_type"`
+	Amount          decimal.Decimal `json:"amount"`
+	AccountBalance  decimal.Decimal `json:"account_balance"`
+	CreateTime      time.Time       `json:"create_time"`
+	CreateBy        string          `json:"create_by"`
 }
 
 // GetTransactionID returns the unique ID of this transaction
@@ -199,23 +200,23 @@ func (trx *BaseTransaction) SetAlignment(txType Alignment) Transaction {
 }
 
 // GetAmount return the transaction Amount
-func (trx *BaseTransaction) GetAmount() int64 {
+func (trx *BaseTransaction) GetAmount() decimal.Decimal {
 	return trx.Amount
 }
 
 // SetAmount will set the Amount
-func (trx *BaseTransaction) SetAmount(newAmount int64) Transaction {
+func (trx *BaseTransaction) SetAmount(newAmount decimal.Decimal) Transaction {
 	trx.Amount = newAmount
 	return trx
 }
 
 // GetAccountBalance return the Balance of the account at the time when this transaction has been written.
-func (trx *BaseTransaction) GetAccountBalance() int64 {
+func (trx *BaseTransaction) GetAccountBalance() decimal.Decimal {
 	return trx.AccountBalance
 }
 
 // SetAccountBalance will set new account Balance
-func (trx *BaseTransaction) SetAccountBalance(newBalance int64) Transaction {
+func (trx *BaseTransaction) SetAccountBalance(newBalance decimal.Decimal) Transaction {
 	trx.AccountBalance = newBalance
 	return trx
 }
@@ -246,17 +247,17 @@ func (trx *BaseTransaction) SetCreateBy(creator string) Transaction {
 
 // BaseAccount is the base implementation of Account
 type BaseAccount struct {
-	Currency      string    `json:"currency"`
-	AccountNumber string    `json:"account_number"`
-	Name          string    `json:"name"`
-	Description   string    `json:"description"`
-	Alignment     Alignment `json:"alignment"`
-	Balance       int64     `json:"balance"`
-	COA           string    `json:"coa"`
-	CreateTime    time.Time `json:"create_time"`
-	CreateBy      string    `json:"create_by"`
-	UpdateTime    time.Time `json:"update_time"`
-	UpdateBy      string    `json:"update_by"`
+	Currency      string          `json:"currency"`
+	AccountNumber string          `json:"account_number"`
+	Name          string          `json:"name"`
+	Description   string          `json:"description"`
+	Alignment     Alignment       `json:"alignment"`
+	Balance       decimal.Decimal `json:"balance"`
+	COA           string          `json:"coa"`
+	CreateTime    time.Time       `json:"create_time"`
+	CreateBy      string          `json:"create_by"`
+	UpdateTime    time.Time       `json:"update_time"`
+	UpdateBy      string          `json:"update_by"`
 }
 
 // GetCurrency returns the Currency identifier such as `GOLD` or `POINT` or `IDR`
@@ -318,12 +319,12 @@ func (acc *BaseAccount) SetAlignment(newType Alignment) Account {
 
 // GetBalance returns the current Balance of this account.
 // for each transaction created for this account, this Balance MUST BE UPDATED
-func (acc *BaseAccount) GetBalance() int64 {
+func (acc *BaseAccount) GetBalance() decimal.Decimal {
 	return acc.Balance
 }
 
 // SetBalance will set new transaction Balance
-func (acc *BaseAccount) SetBalance(newBalance int64) Account {
+func (acc *BaseAccount) SetBalance(newBalance decimal.Decimal) Account {
 	acc.Balance = newBalance
 	return acc
 }
@@ -389,13 +390,13 @@ func (acc *BaseAccount) SetUpdateBy(editor string) Account {
 
 // BaseCurrency is the currency object
 type BaseCurrency struct {
-	Code       string    `json:"code"`
-	Name       string    `json:"name"`
-	Exchange   float64   `json:"exchange"`
-	CreateTime time.Time `json:"create_time"`
-	CreateBy   string    `json:"create_by"`
-	UpdateTime time.Time `json:"update_time"`
-	UpdateBy   string    `json:"update_by"`
+	Code       string          `json:"code"`
+	Name       string          `json:"name"`
+	Exchange   decimal.Decimal `json:"exchange"`
+	CreateTime time.Time       `json:"create_time"`
+	CreateBy   string          `json:"create_by"`
+	UpdateTime time.Time       `json:"update_time"`
+	UpdateBy   string          `json:"update_by"`
 }
 
 // GetCode get the currency short code. e.g. USD
@@ -421,12 +422,12 @@ func (bc *BaseCurrency) SetName(name string) Currency {
 }
 
 // GetExchange get the exchange unit of this currency toward the denominator value
-func (bc *BaseCurrency) GetExchange() float64 {
+func (bc *BaseCurrency) GetExchange() decimal.Decimal {
 	return bc.Exchange
 }
 
 // SetExchange set the exchange unit of this currency toward the denominator value
-func (bc *BaseCurrency) SetExchange(exchange float64) Currency {
+func (bc *BaseCurrency) SetExchange(exchange decimal.Decimal) Currency {
 	bc.Exchange = exchange
 	return bc
 }

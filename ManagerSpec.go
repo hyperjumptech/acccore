@@ -3,7 +3,7 @@ package acccore
 import (
 	"context"
 	"fmt"
-	"math/big"
+	"github.com/shopspring/decimal"
 	"time"
 )
 
@@ -146,9 +146,9 @@ type ExchangeManager interface {
 	// error should be thrown if only there's an underlying error such as db error.
 	IsCurrencyExist(context context.Context, currency string) (bool, error)
 	// GetDenom get the current common denominator used in the exchange
-	GetDenom(context context.Context) *big.Float
+	GetDenom(context context.Context) decimal.Decimal
 	// SetDenom set the current common denominator value into the specified value
-	SetDenom(context context.Context, denom *big.Float)
+	SetDenom(context context.Context, denom decimal.Decimal)
 
 	// ListCurrencies will list all currencies.
 	ListCurrencies(context context.Context) ([]Currency, error)
@@ -157,7 +157,7 @@ type ExchangeManager interface {
 	GetCurrency(context context.Context, code string) (Currency, error)
 	// CreateCurrency set the specified value as denominator value for that speciffic Currency.
 	// This function should return error if the Currency specified is not exist.
-	CreateCurrency(context context.Context, code, name string, exchange *big.Float, author string) (Currency, error)
+	CreateCurrency(context context.Context, code, name string, exchange decimal.Decimal, author string) (Currency, error)
 	// UpdateCurrency updates the currency data
 	// Error should be returned if the specified Currency is not exist.
 	UpdateCurrency(context context.Context, code string, currency Currency, author string) error
@@ -165,9 +165,9 @@ type ExchangeManager interface {
 	// Get the Currency exchange rate for exchanging between the two Currency.
 	// if any of the Currency is not exist, an error should be returned.
 	// if from and to Currency is equal, this must return 1.0
-	CalculateExchangeRate(context context.Context, fromCurrency, toCurrency string) (*big.Float, error)
+	CalculateExchangeRate(context context.Context, fromCurrency, toCurrency string) (decimal.Decimal, error)
 	// Get the Currency exchange value for the Amount of fromCurrency into toCurrency.
 	// If any of the Currency is not exist, an error should be returned.
 	// if from and to Currency is equal, the returned Amount must be equal to the Amount in the argument.
-	CalculateExchange(context context.Context, fromCurrency, toCurrency string, amount int64) (int64, error)
+	CalculateExchange(context context.Context, fromCurrency, toCurrency string, amount decimal.Decimal) (decimal.Decimal, error)
 }
