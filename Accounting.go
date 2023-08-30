@@ -3,6 +3,7 @@ package acccore
 import (
 	"context"
 	"fmt"
+	"github.com/shopspring/decimal"
 	"time"
 )
 
@@ -67,7 +68,7 @@ type TransactionInfo struct {
 	AccountNumber string
 	Description   string
 	TxType        Alignment
-	Amount        int64
+	Amount        decimal.Decimal
 }
 
 // CreateNewJournal creates a new journal
@@ -98,7 +99,8 @@ func (acc *Accounting) CreateNewJournal(context context.Context, description str
 			err = acc.GetJournalManager().CancelJournal(context, journal)
 			return nil, err
 		}
-		return nil, err
+		fmt.Println("No error but no content")
+		return nil, fmt.Errorf("commit journal raised no error but no content")
 	}
 	return journal, nil
 }

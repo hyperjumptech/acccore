@@ -84,6 +84,7 @@ flycheck_*.el
 .idea/**/usage.statistics.xml
 .idea/**/dictionaries
 .idea/**/shelf
+.idea/*.xml
 
 # AWS User-specific
 .idea/**/aws.xml

@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/olekukonko/tablewriter"
+	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 	"math/big"
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/olekukonko/tablewriter"
-	"github.com/sirupsen/logrus"
 )
 
 // RECORD and TABLE simulations ***********************
@@ -22,7 +22,7 @@ type InMemoryJournalRecords struct {
 	description       string
 	reversal          bool
 	reversedJournalID string
-	amount            int64
+	amount            decimal.Decimal
 	createTime        time.Time
 	createBy          string
 }
@@ -34,7 +34,7 @@ type InMemoryAccountRecord struct {
 	name                string
 	description         string
 	baseTransactionType Alignment
-	balance             int64
+	balance             decimal.Decimal
 	coa                 string
 	createTime          time.Time
 	createBy            string
@@ -50,8 +50,8 @@ type InMemoryTransactionRecords struct {
 	journalID       string
 	description     string
 	transactionType Alignment
-	amount          int64
-	accountBalance  int64
+	amount          decimal.Decimal
+	accountBalance  decimal.Decimal
 	createTime      time.Time
 	createBy        string
 }
@@ -104,11 +104,13 @@ func (jm *InMemoryJournalManager) NewJournal(context context.Context) Journal {
 
 // PersistJournal will record a journal entry into database.
 // It requires list of Transactions for which each of the transaction MUST BE :
-//    1.NOT BE PERSISTED. (the journal AccountNumber is not exist in DB yet)
-//    2.Pointing or owned by a PERSISTED Account
-//    3.Each of this account must belong to the same Currency
-//    4.Balanced. The total sum of DEBIT and total sum of CREDIT is equal.
-//    5.No duplicate transaction that belongs to the same Account.
+//
+//	1.NOT BE PERSISTED. (the journal AccountNumber is not exist in DB yet)
+//	2.Pointing or owned by a PERSISTED Account
+//	3.Each of this account must belong to the same Currency
+//	4.Balanced. The total sum of DEBIT and total sum of CREDIT is equal.
+//	5.No duplicate transaction that belongs to the same Account.
+//
 // If your database support 2 phased commit, you can make all Balance changes in
 // accounts and Transactions. If your db do not support this, you can implement your own 2 phase commits mechanism
 // on the CommitJournal and CancelJournal
@@ -156,13 +158,13 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 	}
 
 	// 5. Make sure Transactions are balanced.
-	var creditSum, debitSum int64
+	var creditSum, debitSum decimal.Decimal
 	for _, trx := range journalToPersist.GetTransactions() {
 		if trx.GetAlignment() == DEBIT {
-			debitSum += trx.GetAmount()
+			debitSum = debitSum.Add(trx.GetAmount())
 		}
 		if trx.GetAlignment() == CREDIT {
-			creditSum += trx.GetAmount()
+			creditSum = creditSum.Add(trx.GetAmount())
 		}
 	}
 	if creditSum != debitSum {
@@ -247,19 +249,19 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 			description:     trx.GetDescription(),
 			transactionType: trx.GetAlignment(),
 			amount:          trx.GetAmount(),
-			accountBalance:  0,          // will be updated
-			createTime:      time.Now(), // now is set
+			accountBalance:  decimal.Zero, // will be updated
+			createTime:      time.Now(),   // now is set
 			createBy:        trx.GetCreateBy(),
 		}
 		// get the account current Balance
 		// SELECT BALANCE, BASE_TRANSACTION_TYPE FROM ACCOUNT WHERE ACCOUNT_ID = {trx.GetAccountNumber()}
 		balance, accountTrxType := InMemoryAccountTable[trx.GetAccountNumber()].balance, InMemoryAccountTable[trx.GetAccountNumber()].baseTransactionType
 
-		newBalance := int64(0)
+		newBalance := decimal.Zero
 		if transactionToInsert.transactionType == accountTrxType {
-			newBalance = balance + transactionToInsert.amount
+			newBalance = balance.Add(transactionToInsert.amount)
 		} else {
-			newBalance = balance - transactionToInsert.amount
+			newBalance = balance.Sub(transactionToInsert.amount)
 		}
 		transactionToInsert.accountBalance = newBalance
 
@@ -380,22 +382,22 @@ func (jm *InMemoryJournalManager) ListJournals(context context.Context, from tim
 }
 
 // GetTotalDebit returns sum of all transaction in the DEBIT Alignment
-func GetTotalDebit(journal Journal) int64 {
-	total := int64(0)
+func GetTotalDebit(journal Journal) decimal.Decimal {
+	total := decimal.Zero
 	for _, t := range journal.GetTransactions() {
 		if t.GetAlignment() == DEBIT {
-			total += t.GetAmount()
+			total = total.Add(t.GetAmount())
 		}
 	}
 	return total
 }
 
 // GetTotalCredit returns sum of all transaction in the CREDIT Alignment
-func GetTotalCredit(journal Journal) int64 {
-	total := int64(0)
+func GetTotalCredit(journal Journal) decimal.Decimal {
+	total := decimal.Zero
 	for _, t := range journal.GetTransactions() {
 		if t.GetAlignment() == CREDIT {
-			total += t.GetAmount()
+			total = total.Add(t.GetAmount())
 		}
 	}
 	return total
@@ -422,10 +424,11 @@ func (jm *InMemoryJournalManager) IsJournalIDReversed(context context.Context, j
 
 // RenderJournal will render this journal into string for easy inspection
 func (jm *InMemoryJournalManager) RenderJournal(context context.Context, journal Journal) string {
+
 	var buff bytes.Buffer
 	table := tablewriter.NewWriter(&buff)
 	table.SetHeader([]string{"TRX ID", "Account", "Description", "DEBIT", "CREDIT"})
-	table.SetFooter([]string{"", "", "", fmt.Sprintf("%d", GetTotalDebit(journal)), fmt.Sprintf("%d", GetTotalCredit(journal))})
+	table.SetFooter([]string{"", "", "", fmt.Sprintf("%s", GetTotalDebit(journal)), fmt.Sprintf("%s", GetTotalCredit(journal))})
 
 	for _, t := range journal.GetTransactions() {
 		if t.GetAlignment() == DEBIT {

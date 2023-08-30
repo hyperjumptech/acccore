@@ -1,6 +1,7 @@
 package acccore
 
 import (
+	"github.com/shopspring/decimal"
 	"time"
 )
 
@@ -49,9 +50,9 @@ type Journal interface {
 	SetReversedJournal(journal Journal) Journal
 
 	// GetAmount should return the current Amount of total transaction values
-	GetAmount() int64
+	GetAmount() decimal.Decimal
 	// SetAmount will set new total transaction Amount
-	SetAmount(newAmount int64) Journal
+	SetAmount(newAmount decimal.Decimal) Journal
 
 	// GetTransactions should returns all transaction information that being part of this journal entry.
 	GetTransactions() []Transaction
@@ -109,14 +110,14 @@ type Transaction interface {
 	SetAlignment(txType Alignment) Transaction
 
 	// GetAmount return the transaction Amount
-	GetAmount() int64
+	GetAmount() decimal.Decimal
 	// SetAmount will set the Amount
-	SetAmount(newAmount int64) Transaction
+	SetAmount(newAmount decimal.Decimal) Transaction
 
 	// GetBookBalance return the Balance of the account at the time when this transaction has been written.
-	GetAccountBalance() int64
+	GetAccountBalance() decimal.Decimal
 	// SetAccountBalance will set new account Balance
-	SetAccountBalance(newBalance int64) Transaction
+	SetAccountBalance(newBalance decimal.Decimal) Transaction
 
 	// GetCreateTime function should return the time when this transaction is created/recorded.
 	// this function serves as audit trail.
@@ -162,9 +163,9 @@ type Account interface {
 
 	// GetBalance returns the current Balance of this account.
 	// for each transaction created for this account, this Balance MUST BE UPDATED
-	GetBalance() int64
+	GetBalance() decimal.Decimal
 	// SetBalance will set new transaction Balance
-	SetBalance(newBalance int64) Account
+	SetBalance(newBalance decimal.Decimal) Account
 
 	// GetCOA returns the COA code for this account, used for categorization of account.
 	GetCOA() string
