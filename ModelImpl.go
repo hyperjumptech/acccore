@@ -1,6 +1,7 @@
 package acccore
 
 import (
+	"encoding/json"
 	"github.com/shopspring/decimal"
 	"time"
 )
@@ -16,6 +17,68 @@ type BaseJournal struct {
 	Transactions    []Transaction   `json:"transactions"`
 	CreateTime      time.Time       `json:"create_time"`
 	CreatedBy       string          `json:"created_by"`
+}
+
+func (journal *BaseJournal) MarshalJSON() ([]byte, error) {
+	toMarshal := struct {
+		JournalID       string        `json:"journal_id"`
+		JournalingTime  time.Time     `json:"journaling_time"`
+		Description     string        `json:"description"`
+		Reversal        bool          `json:"reversal"`
+		ReversedJournal Journal       `json:"reversed_journal"`
+		Amount          float64       `json:"amount"`
+		Transactions    []Transaction `json:"transactions"`
+		CreateTime      time.Time     `json:"create_time"`
+		CreatedBy       string        `json:"created_by"`
+	}{
+		JournalID:       journal.JournalID,
+		JournalingTime:  journal.JournalingTime,
+		Description:     journal.Description,
+		Reversal:        journal.Reversal,
+		ReversedJournal: journal.ReversedJournal,
+		Amount:          journal.Amount.InexactFloat64(),
+		Transactions:    journal.Transactions,
+		CreateTime:      journal.CreateTime,
+		CreatedBy:       journal.CreatedBy,
+	}
+	return json.Marshal(toMarshal)
+}
+
+func (journal *BaseJournal) UnmarshalJSON(data []byte) error {
+	// Ignore null, like in the main JSON package.
+	if string(data) == "null" || string(data) == `""` {
+		return nil
+	}
+
+	toMarshal := struct {
+		JournalID       string        `json:"journal_id"`
+		JournalingTime  time.Time     `json:"journaling_time"`
+		Description     string        `json:"description"`
+		Reversal        bool          `json:"reversal"`
+		ReversedJournal Journal       `json:"reversed_journal"`
+		Amount          float64       `json:"amount"`
+		Transactions    []Transaction `json:"transactions"`
+		CreateTime      time.Time     `json:"create_time"`
+		CreatedBy       string        `json:"created_by"`
+	}{}
+
+	err := json.Unmarshal(data, &toMarshal)
+	if err != nil {
+		return err
+	}
+
+	journal.JournalID = toMarshal.JournalID
+
+	journal.JournalingTime = toMarshal.JournalingTime
+	journal.Description = toMarshal.Description
+	journal.Reversal = toMarshal.Reversal
+	journal.ReversedJournal = toMarshal.ReversedJournal
+	journal.Amount = decimal.NewFromFloat(toMarshal.Amount)
+	journal.Transactions = toMarshal.Transactions
+	journal.CreateTime = toMarshal.CreateTime
+	journal.CreatedBy = toMarshal.CreatedBy
+
+	return nil
 }
 
 // GetJournalID would return the journal unique ID
@@ -131,6 +194,71 @@ type BaseTransaction struct {
 	AccountBalance  decimal.Decimal `json:"account_balance"`
 	CreateTime      time.Time       `json:"create_time"`
 	CreateBy        string          `json:"create_by"`
+}
+
+func (trx *BaseTransaction) MarshalJSON() ([]byte, error) {
+	toMarshal := struct {
+		TransactionID   string    `json:"transaction_id"`
+		TransactionTime time.Time `json:"transaction_time"`
+		AccountNumber   string    `json:"account_number"`
+		JournalID       string    `json:"journal_id"`
+		Description     string    `json:"description"`
+		TransactionType Alignment `json:"transaction_type"`
+		Amount          float64   `json:"amount"`
+		AccountBalance  float64   `json:"account_balance"`
+		CreateTime      time.Time `json:"create_time"`
+		CreateBy        string    `json:"create_by"`
+	}{
+		TransactionID:   trx.TransactionID,
+		TransactionTime: trx.TransactionTime,
+		AccountNumber:   trx.AccountNumber,
+		JournalID:       trx.JournalID,
+		Description:     trx.Description,
+		TransactionType: trx.TransactionType,
+		Amount:          trx.Amount.InexactFloat64(),
+		AccountBalance:  trx.AccountBalance.InexactFloat64(),
+		CreateTime:      trx.CreateTime,
+		CreateBy:        trx.CreateBy,
+	}
+	return json.Marshal(toMarshal)
+}
+
+func (trx *BaseTransaction) UnmarshalJSON(data []byte) error {
+	// Ignore null, like in the main JSON package.
+	if string(data) == "null" || string(data) == `""` {
+		return nil
+	}
+
+	toMarshal := struct {
+		TransactionID   string    `json:"transaction_id"`
+		TransactionTime time.Time `json:"transaction_time"`
+		AccountNumber   string    `json:"account_number"`
+		JournalID       string    `json:"journal_id"`
+		Description     string    `json:"description"`
+		TransactionType Alignment `json:"transaction_type"`
+		Amount          float64   `json:"amount"`
+		AccountBalance  float64   `json:"account_balance"`
+		CreateTime      time.Time `json:"create_time"`
+		CreateBy        string    `json:"create_by"`
+	}{}
+
+	err := json.Unmarshal(data, &toMarshal)
+	if err != nil {
+		return err
+	}
+
+	trx.TransactionID = toMarshal.TransactionID
+	trx.TransactionTime = toMarshal.TransactionTime
+	trx.AccountNumber = toMarshal.AccountNumber
+	trx.JournalID = toMarshal.JournalID
+	trx.Description = toMarshal.Description
+	trx.TransactionType = toMarshal.TransactionType
+	trx.Amount = decimal.NewFromFloat(toMarshal.Amount)
+	trx.AccountBalance = decimal.NewFromFloat(toMarshal.AccountBalance)
+	trx.CreateTime = toMarshal.CreateTime
+	trx.CreateBy = toMarshal.CreateBy
+
+	return nil
 }
 
 // GetTransactionID returns the unique ID of this transaction
@@ -258,6 +386,75 @@ type BaseAccount struct {
 	CreateBy      string          `json:"create_by"`
 	UpdateTime    time.Time       `json:"update_time"`
 	UpdateBy      string          `json:"update_by"`
+}
+
+func (acc *BaseAccount) MarshalJSON() ([]byte, error) {
+	toMarshal := struct {
+		Currency      string    `json:"currency"`
+		AccountNumber string    `json:"account_number"`
+		Name          string    `json:"name"`
+		Description   string    `json:"description"`
+		Alignment     Alignment `json:"alignment"`
+		Balance       float64   `json:"balance"`
+		COA           string    `json:"coa"`
+		CreateTime    time.Time `json:"create_time"`
+		CreateBy      string    `json:"create_by"`
+		UpdateTime    time.Time `json:"update_time"`
+		UpdateBy      string    `json:"update_by"`
+	}{
+		Currency:      acc.Currency,
+		AccountNumber: acc.AccountNumber,
+		Name:          acc.Name,
+		Description:   acc.Description,
+		Alignment:     acc.Alignment,
+		Balance:       acc.Balance.InexactFloat64(),
+		COA:           acc.COA,
+		CreateTime:    acc.CreateTime,
+		CreateBy:      acc.CreateBy,
+		UpdateTime:    acc.UpdateTime,
+		UpdateBy:      acc.UpdateBy,
+	}
+	return json.Marshal(toMarshal)
+}
+
+func (acc *BaseAccount) UnmarshalJSON(data []byte) error {
+	// Ignore null, like in the main JSON package.
+	if string(data) == "null" || string(data) == `""` {
+		return nil
+	}
+
+	toMarshal := struct {
+		Currency      string    `json:"currency"`
+		AccountNumber string    `json:"account_number"`
+		Name          string    `json:"name"`
+		Description   string    `json:"description"`
+		Alignment     Alignment `json:"alignment"`
+		Balance       float64   `json:"balance"`
+		COA           string    `json:"coa"`
+		CreateTime    time.Time `json:"create_time"`
+		CreateBy      string    `json:"create_by"`
+		UpdateTime    time.Time `json:"update_time"`
+		UpdateBy      string    `json:"update_by"`
+	}{}
+
+	err := json.Unmarshal(data, &toMarshal)
+	if err != nil {
+		return err
+	}
+
+	acc.Currency = toMarshal.Currency
+	acc.AccountNumber = toMarshal.AccountNumber
+	acc.Name = toMarshal.Name
+	acc.Description = toMarshal.Description
+	acc.Alignment = toMarshal.Alignment
+	acc.Balance = decimal.NewFromFloat(toMarshal.Balance)
+	acc.COA = toMarshal.COA
+	acc.CreateTime = toMarshal.CreateTime
+	acc.CreateBy = toMarshal.CreateBy
+	acc.UpdateTime = toMarshal.UpdateTime
+	acc.UpdateBy = toMarshal.UpdateBy
+
+	return nil
 }
 
 // GetCurrency returns the Currency identifier such as `GOLD` or `POINT` or `IDR`
@@ -397,6 +594,59 @@ type BaseCurrency struct {
 	CreateBy   string          `json:"create_by"`
 	UpdateTime time.Time       `json:"update_time"`
 	UpdateBy   string          `json:"update_by"`
+}
+
+func (bc *BaseCurrency) MarshalJSON() ([]byte, error) {
+	toMarshal := struct {
+		Code       string    `json:"code"`
+		Name       string    `json:"name"`
+		Exchange   float64   `json:"exchange"`
+		CreateTime time.Time `json:"create_time"`
+		CreateBy   string    `json:"create_by"`
+		UpdateTime time.Time `json:"update_time"`
+		UpdateBy   string    `json:"update_by"`
+	}{
+		Code:       bc.Code,
+		Name:       bc.Name,
+		Exchange:   bc.Exchange.InexactFloat64(),
+		CreateTime: bc.CreateTime,
+		CreateBy:   bc.CreateBy,
+		UpdateTime: bc.UpdateTime,
+		UpdateBy:   bc.UpdateBy,
+	}
+	return json.Marshal(toMarshal)
+}
+
+func (bc *BaseCurrency) UnmarshalJSON(data []byte) error {
+	// Ignore null, like in the main JSON package.
+	if string(data) == "null" || string(data) == `""` {
+		return nil
+	}
+
+	toMarshal := struct {
+		Code       string    `json:"code"`
+		Name       string    `json:"name"`
+		Exchange   float64   `json:"exchange"`
+		CreateTime time.Time `json:"create_time"`
+		CreateBy   string    `json:"create_by"`
+		UpdateTime time.Time `json:"update_time"`
+		UpdateBy   string    `json:"update_by"`
+	}{}
+
+	err := json.Unmarshal(data, &toMarshal)
+	if err != nil {
+		return err
+	}
+
+	bc.Code = toMarshal.Code
+	bc.Name = toMarshal.Name
+	bc.Exchange = decimal.NewFromFloat(toMarshal.Exchange)
+	bc.CreateTime = toMarshal.CreateTime
+	bc.CreateBy = toMarshal.CreateBy
+	bc.UpdateTime = toMarshal.UpdateTime
+	bc.UpdateBy = toMarshal.UpdateBy
+
+	return nil
 }
 
 // GetCode get the currency short code. e.g. USD
