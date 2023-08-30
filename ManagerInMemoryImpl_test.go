@@ -2,42 +2,42 @@ package acccore
 
 import (
 	"context"
-	"math/big"
+	"github.com/shopspring/decimal"
 	"testing"
 )
 
 type ExchangeTest struct {
 	from       string
-	fromAmount int64
+	fromAmount decimal.Decimal
 	to         string
-	toAmount   int64
+	toAmount   decimal.Decimal
 }
 
 func TestInMemoryExchangeManager_CalculateExchange(t *testing.T) {
 	ctx := context.Background()
 	exchangeManager := NewInMemoryExchangeManager()
-	_, _ = exchangeManager.CreateCurrency(ctx, "PLATINUM", "Platinum", big.NewFloat(0.001), "superman")
-	_, _ = exchangeManager.CreateCurrency(ctx, "GOLD", "Gold", big.NewFloat(0.01), "superman")
-	_, _ = exchangeManager.CreateCurrency(ctx, "SILVER", "Silver", big.NewFloat(0.1), "superman")
-	_, _ = exchangeManager.CreateCurrency(ctx, "COPPER", "Copper", big.NewFloat(1.0), "superman")
+	_, _ = exchangeManager.CreateCurrency(ctx, "PLATINUM", "Platinum", decimal.NewFromFloat(0.001), "superman")
+	_, _ = exchangeManager.CreateCurrency(ctx, "GOLD", "Gold", decimal.NewFromFloat(0.01), "superman")
+	_, _ = exchangeManager.CreateCurrency(ctx, "SILVER", "Silver", decimal.NewFromFloat(0.1), "superman")
+	_, _ = exchangeManager.CreateCurrency(ctx, "COPPER", "Copper", decimal.NewFromFloat(1.0), "superman")
 	testData := []*ExchangeTest{
 		{
 			from:       "GOLD",
-			fromAmount: 1000,
+			fromAmount: decimal.NewFromInt(1000),
 			to:         "PLATINUM",
-			toAmount:   100,
+			toAmount:   decimal.NewFromInt(100),
 		},
 		{
 			from:       "GOLD",
-			fromAmount: 1000,
+			fromAmount: decimal.NewFromInt(1000),
 			to:         "SILVER",
-			toAmount:   10000,
+			toAmount:   decimal.NewFromInt(10000),
 		},
 		{
 			from:       "GOLD",
-			fromAmount: 1000,
+			fromAmount: decimal.NewFromInt(1000),
 			to:         "GOLD",
-			toAmount:   1000,
+			toAmount:   decimal.NewFromInt(1000),
 		},
 	}
 	for idx, data := range testData {
@@ -46,21 +46,21 @@ func TestInMemoryExchangeManager_CalculateExchange(t *testing.T) {
 			t.Errorf(err.Error())
 			t.Fail()
 		}
-		if result != data.toAmount {
-			t.Errorf("#%d. Expect %d but %d", idx, data.toAmount, result)
+		if result.InexactFloat64() != data.toAmount.InexactFloat64() {
+			t.Errorf("#%d. Expect %f but %f", idx, data.toAmount.InexactFloat64(), result.InexactFloat64())
 			t.Fail()
 		}
 	}
 
-	exchangeManager.SetDenom(ctx, big.NewFloat(123.456))
+	exchangeManager.SetDenom(ctx, decimal.NewFromFloat(123.456))
 	for idx, data := range testData {
 		result, err := exchangeManager.CalculateExchange(ctx, data.from, data.to, data.fromAmount)
 		if err != nil {
 			t.Errorf(err.Error())
 			t.Fail()
 		}
-		if result != data.toAmount {
-			t.Errorf("#%d. Expect %d but %d", idx, data.toAmount, result)
+		if result.InexactFloat64() != data.toAmount.InexactFloat64() {
+			t.Errorf("#%d. Expect %f but %f", idx, data.toAmount.InexactFloat64(), result.InexactFloat64())
 			t.Fail()
 		}
 	}

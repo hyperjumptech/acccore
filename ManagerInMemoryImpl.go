@@ -7,7 +7,6 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/shopspring/decimal"
 	"github.com/sirupsen/logrus"
-	"math/big"
 	"sort"
 	"strings"
 	"time"
@@ -60,7 +59,7 @@ type InMemoryTransactionRecords struct {
 type InMemoryCurrencyRecords struct {
 	code       string
 	name       string
-	exchange   float64
+	exchange   decimal.Decimal
 	createTime time.Time
 	createBy   string
 	updateTime time.Time
@@ -167,7 +166,7 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 			creditSum = creditSum.Add(trx.GetAmount())
 		}
 	}
-	if creditSum != debitSum {
+	if !creditSum.Equal(debitSum) {
 		logrus.Errorf("error persisting journal %s. debit (%d) != credit (%d). journal not Balance", journalToPersist.GetJournalID(), debitSum, creditSum)
 		return ErrJournalNotBalance
 	}
@@ -788,13 +787,13 @@ func (tm *InMemoryTransactionManager) RenderTransactionsOnAccount(context contex
 // NewInMemoryExchangeManager initializes a new excahnge manager in memory
 func NewInMemoryExchangeManager() ExchangeManager {
 	return &InMemoryExchangeManager{
-		commonDenominator: big.NewFloat(1.0),
+		commonDenominator: decimal.NewFromInt(1),
 	}
 }
 
 // InMemoryExchangeManager is a base implementation of ExchangeManager.
 type InMemoryExchangeManager struct {
-	commonDenominator *big.Float
+	commonDenominator decimal.Decimal
 }
 
 // IsCurrencyExist will check in the exchange system for a Currency existance
@@ -806,12 +805,12 @@ func (em *InMemoryExchangeManager) IsCurrencyExist(context context.Context, curr
 }
 
 // GetDenom get the current common denominator used in the exchange
-func (em *InMemoryExchangeManager) GetDenom(context context.Context) *big.Float {
+func (em *InMemoryExchangeManager) GetDenom(context context.Context) decimal.Decimal {
 	return em.commonDenominator
 }
 
 // SetDenom set the current common denominator value into the specified value
-func (em *InMemoryExchangeManager) SetDenom(context context.Context, denom *big.Float) {
+func (em *InMemoryExchangeManager) SetDenom(context context.Context, denom decimal.Decimal) {
 	em.commonDenominator = denom
 }
 
@@ -835,15 +834,14 @@ func (em *InMemoryExchangeManager) GetCurrency(context context.Context, code str
 
 // CreateCurrency set the specified value as denominator value for that speciffic Currency.
 // This function should return error if the Currency specified is not exist.
-func (em *InMemoryExchangeManager) CreateCurrency(context context.Context, code, name string, exchange *big.Float, author string) (Currency, error) {
+func (em *InMemoryExchangeManager) CreateCurrency(context context.Context, code, name string, exchange decimal.Decimal, author string) (Currency, error) {
 	if _, exist := InMemoryCurrencyTable[code]; exist {
 		return nil, ErrCurrencyAlreadyPersisted
 	}
-	exc, _ := exchange.Float64()
 	bc := &InMemoryCurrencyRecords{
 		code:       code,
 		name:       name,
-		exchange:   exc,
+		exchange:   exchange,
 		createTime: time.Now(),
 		createBy:   author,
 		updateTime: time.Now(),
@@ -853,7 +851,7 @@ func (em *InMemoryExchangeManager) CreateCurrency(context context.Context, code,
 	return &BaseCurrency{
 		Code:       code,
 		Name:       name,
-		Exchange:   exc,
+		Exchange:   exchange,
 		CreateTime: time.Now(),
 		CreateBy:   author,
 		UpdateTime: time.Now(),
@@ -882,32 +880,34 @@ func (em *InMemoryExchangeManager) UpdateCurrency(context context.Context, code 
 // CalculateExchangeRate gets the Currency exchange rate for exchanging between the two Currency.
 // if any of the Currency is not exist, an error should be returned.
 // if from and to Currency is equal, this must return 1.0
-func (em *InMemoryExchangeManager) CalculateExchangeRate(context context.Context, fromCurrency, toCurrency string) (*big.Float, error) {
+func (em *InMemoryExchangeManager) CalculateExchangeRate(context context.Context, fromCurrency, toCurrency string) (decimal.Decimal, error) {
 	from, err := em.GetCurrency(context, fromCurrency)
 	if err != nil {
-		return nil, err
+		return decimal.Zero, err
 	}
 	to, err := em.GetCurrency(context, toCurrency)
 	if err != nil {
-		return nil, err
+		return decimal.Zero, err
 	}
-	m1 := new(big.Float).Quo(em.GetDenom(context), big.NewFloat(from.GetExchange()))
-	m2 := new(big.Float).Mul(m1, big.NewFloat(to.GetExchange()))
-	m3 := new(big.Float).Quo(m2, em.GetDenom(context))
+	m1 := em.GetDenom(context).Div(from.GetExchange())
+	m2 := m1.Mul(to.GetExchange())
+	m3 := m2.Div(em.GetDenom(context))
+	//m1 := new(big.Float).Quo(em.GetDenom(context), big.NewFloat(from.GetExchange()))
+	//m2 := new(big.Float).Mul(m1, big.NewFloat(to.GetExchange()))
+	//m3 := new(big.Float).Quo(m2, em.GetDenom(context))
 	return m3, nil
 }
 
 // CalculateExchange gets the Currency exchange value for the Amount of fromCurrency into toCurrency.
 // If any of the Currency is not exist, an error should be returned.
 // if from and to Currency is equal, the returned Amount must be equal to the Amount in the argument.
-func (em *InMemoryExchangeManager) CalculateExchange(context context.Context, fromCurrency, toCurrency string, amount int64) (int64, error) {
+func (em *InMemoryExchangeManager) CalculateExchange(context context.Context, fromCurrency, toCurrency string, amount decimal.Decimal) (decimal.Decimal, error) {
 	exchange, err := em.CalculateExchangeRate(context, fromCurrency, toCurrency)
 	if err != nil {
-		return 0, err
+		return decimal.Zero, err
 	}
-	m1 := new(big.Float).Mul(exchange, big.NewFloat(float64(amount)))
-	f, _ := m1.Float64()
-	return int64(f), nil
+	m1 := exchange.Mul(amount)
+	return m1, nil
 }
 
 // ListCurrencies will list all currencies.

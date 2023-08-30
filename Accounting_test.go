@@ -3,6 +3,7 @@ package acccore
 import (
 	"context"
 	"github.com/shopspring/decimal"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -51,6 +52,12 @@ func TestAccounting_CreateNewAccount(t *testing.T) {
 		t.Log(render)
 	}
 
+}
+
+func TestDecimal(t *testing.T) {
+	pa := decimal.NewFromInt(123)
+	pa = pa.Add(decimal.NewFromInt(1))
+	assert.True(t, pa.Equal(decimal.NewFromInt(124)))
 }
 
 func TestAccounting_CreateNewJournal(t *testing.T) {

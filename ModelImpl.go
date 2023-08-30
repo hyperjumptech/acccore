@@ -390,13 +390,13 @@ func (acc *BaseAccount) SetUpdateBy(editor string) Account {
 
 // BaseCurrency is the currency object
 type BaseCurrency struct {
-	Code       string    `json:"code"`
-	Name       string    `json:"name"`
-	Exchange   float64   `json:"exchange"`
-	CreateTime time.Time `json:"create_time"`
-	CreateBy   string    `json:"create_by"`
-	UpdateTime time.Time `json:"update_time"`
-	UpdateBy   string    `json:"update_by"`
+	Code       string          `json:"code"`
+	Name       string          `json:"name"`
+	Exchange   decimal.Decimal `json:"exchange"`
+	CreateTime time.Time       `json:"create_time"`
+	CreateBy   string          `json:"create_by"`
+	UpdateTime time.Time       `json:"update_time"`
+	UpdateBy   string          `json:"update_by"`
 }
 
 // GetCode get the currency short code. e.g. USD
@@ -422,12 +422,12 @@ func (bc *BaseCurrency) SetName(name string) Currency {
 }
 
 // GetExchange get the exchange unit of this currency toward the denominator value
-func (bc *BaseCurrency) GetExchange() float64 {
+func (bc *BaseCurrency) GetExchange() decimal.Decimal {
 	return bc.Exchange
 }
 
 // SetExchange set the exchange unit of this currency toward the denominator value
-func (bc *BaseCurrency) SetExchange(exchange float64) Currency {
+func (bc *BaseCurrency) SetExchange(exchange decimal.Decimal) Currency {
 	bc.Exchange = exchange
 	return bc
 }

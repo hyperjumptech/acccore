@@ -210,9 +210,9 @@ type Currency interface {
 	SetName(name string) Currency
 
 	// GetExchange get the exchange unit of this currency toward the denominator value
-	GetExchange() float64
+	GetExchange() decimal.Decimal
 	// SetExchange set the exchange unit of this currency toward the denominator value
-	SetExchange(exchange float64) Currency
+	SetExchange(exchange decimal.Decimal) Currency
 
 	// GetCreateTime function should return the time when this account is created/recorded.
 	// this function serves as audit trail.
