@@ -427,16 +427,16 @@ func (jm *InMemoryJournalManager) RenderJournal(context context.Context, journal
 	var buff bytes.Buffer
 	table := tablewriter.NewWriter(&buff)
 	table.SetHeader([]string{"TRX ID", "Account", "Description", "DEBIT", "CREDIT"})
-	table.SetFooter([]string{"", "", "", fmt.Sprintf("%s", GetTotalDebit(journal)), fmt.Sprintf("%s", GetTotalCredit(journal))})
+	table.SetFooter([]string{"", "", "", fmt.Sprintf("%s", GetTotalDebit(journal).String()), fmt.Sprintf("%s", GetTotalCredit(journal).String())})
 
 	for _, t := range journal.GetTransactions() {
 		if t.GetAlignment() == DEBIT {
-			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), fmt.Sprintf("%d", t.GetAmount()), ""})
+			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), fmt.Sprintf("%s", t.GetAmount().String()), ""})
 		}
 	}
 	for _, t := range journal.GetTransactions() {
 		if t.GetAlignment() == CREDIT {
-			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), "", fmt.Sprintf("%d", t.GetAmount())})
+			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), "", fmt.Sprintf("%s", t.GetAmount().String())})
 		}
 	}
 	buff.WriteString(fmt.Sprintf("Journal Entry : %s\n", journal.GetJournalID()))
@@ -764,10 +764,10 @@ func (tm *InMemoryTransactionManager) RenderTransactionsOnAccount(context contex
 
 	for _, t := range transactions {
 		if t.GetAlignment() == DEBIT {
-			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), fmt.Sprintf("%d", t.GetAmount()), "", fmt.Sprintf("%d", t.GetAccountBalance())})
+			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), fmt.Sprintf("%s", t.GetAmount().String()), "", fmt.Sprintf("%s", t.GetAccountBalance().String())})
 		}
 		if t.GetAlignment() == CREDIT {
-			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), "", fmt.Sprintf("%d", t.GetAmount()), fmt.Sprintf("%d", t.GetAccountBalance())})
+			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), "", fmt.Sprintf("%s", t.GetAmount().String()), fmt.Sprintf("%s", t.GetAccountBalance().String())})
 		}
 	}
 
