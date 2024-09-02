@@ -1,4 +1,4 @@
-module acccore
+module github.com/hyperjumptech/acccore
 
 go 1.22
 
