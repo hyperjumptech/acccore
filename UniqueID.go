@@ -2,16 +2,15 @@ package acccore
 
 import (
 	"bytes"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+// No need to seed the global random generator as of Go 1.20
 
 // UniqueIDGenerator define the unique string generator. The unique string generated MUST be widely system unique, even
 // accross nodes.
@@ -39,7 +38,7 @@ type NanoSecondUniqueIDGenerator struct{}
 
 // NewUniqueID will produce a unique ID string.
 func (gen *NanoSecondUniqueIDGenerator) NewUniqueID() string {
-	return fmt.Sprintf("%d", time.Now().Sub(nanoSince).Nanoseconds())
+	return fmt.Sprintf("%d", time.Since(nanoSince).Nanoseconds())
 }
 
 const (
@@ -92,7 +91,13 @@ func (gen *RandomGenUniqueIDGenerator) NewUniqueID() string {
 	l := len(gen.CharSetBuffer)
 	buff.Reset()
 	for buff.Len() < gen.Length {
-		r := rand.Intn(l)
+
+		nBig, err := rand.Int(rand.Reader, big.NewInt(int64(l)))
+		if err != nil {
+			panic(err)
+		}
+		r := nBig.Int64()
+
 		buff.Write(gen.CharSetBuffer[r : r+1])
 	}
 	return buff.String()
