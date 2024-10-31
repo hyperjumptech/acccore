@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/olekukonko/tablewriter"
-	"github.com/shopspring/decimal"
-	"github.com/sirupsen/logrus"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 )
 
 // RECORD and TABLE simulations ***********************
@@ -135,7 +136,7 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 	// 2. Checking if the journal ID must not in the Database (already persisted)
 	//    SQL HINT : SELECT COUNT(*) FROM JOURNAL WHERE JOURNAL.ID = {journalToPersist.GetJournalID()}
 	//    If COUNT(*) is > 0 return error
-	if _, exist := InMemoryJournalTable[journalToPersist.GetJournalID()]; exist == true {
+	if _, exist := InMemoryJournalTable[journalToPersist.GetJournalID()]; exist {
 		logrus.Errorf("error persisting journal %s. journal already exist.", journalToPersist.GetJournalID())
 		return ErrJournalAlreadyPersisted
 	}
@@ -256,7 +257,7 @@ func (jm *InMemoryJournalManager) PersistJournal(context context.Context, journa
 		// SELECT BALANCE, BASE_TRANSACTION_TYPE FROM ACCOUNT WHERE ACCOUNT_ID = {trx.GetAccountNumber()}
 		balance, accountTrxType := InMemoryAccountTable[trx.GetAccountNumber()].balance, InMemoryAccountTable[trx.GetAccountNumber()].baseTransactionType
 
-		newBalance := decimal.Zero
+		var newBalance decimal.Decimal
 		if transactionToInsert.transactionType == accountTrxType {
 			newBalance = balance.Add(transactionToInsert.amount)
 		} else {
@@ -427,16 +428,16 @@ func (jm *InMemoryJournalManager) RenderJournal(context context.Context, journal
 	var buff bytes.Buffer
 	table := tablewriter.NewWriter(&buff)
 	table.SetHeader([]string{"TRX ID", "Account", "Description", "DEBIT", "CREDIT"})
-	table.SetFooter([]string{"", "", "", fmt.Sprintf("%s", GetTotalDebit(journal).String()), fmt.Sprintf("%s", GetTotalCredit(journal).String())})
+	table.SetFooter([]string{"", "", "", GetTotalDebit(journal).String(), GetTotalCredit(journal).String()})
 
 	for _, t := range journal.GetTransactions() {
 		if t.GetAlignment() == DEBIT {
-			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), fmt.Sprintf("%s", t.GetAmount().String()), ""})
+			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), t.GetAmount().String(), ""})
 		}
 	}
 	for _, t := range journal.GetTransactions() {
 		if t.GetAlignment() == CREDIT {
-			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), "", fmt.Sprintf("%s", t.GetAmount().String())})
+			table.Append([]string{t.GetTransactionID(), t.GetAccountNumber(), t.GetDescription(), "", t.GetAmount().String()})
 		}
 	}
 	buff.WriteString(fmt.Sprintf("Journal Entry : %s\n", journal.GetJournalID()))
@@ -764,10 +765,10 @@ func (tm *InMemoryTransactionManager) RenderTransactionsOnAccount(context contex
 
 	for _, t := range transactions {
 		if t.GetAlignment() == DEBIT {
-			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), fmt.Sprintf("%s", t.GetAmount().String()), "", fmt.Sprintf("%s", t.GetAccountBalance().String())})
+			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), "%s", t.GetAmount().String(), "", "%s", t.GetAccountBalance().String()})
 		}
 		if t.GetAlignment() == CREDIT {
-			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), "", fmt.Sprintf("%s", t.GetAmount().String()), fmt.Sprintf("%s", t.GetAccountBalance().String())})
+			table.Append([]string{t.GetTransactionID(), t.GetTransactionTime().String(), t.GetJournalID(), t.GetDescription(), "", t.GetAmount().String(), t.GetAccountBalance().String()})
 		}
 	}
 

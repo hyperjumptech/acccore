@@ -2,8 +2,9 @@ package acccore
 
 import (
 	"context"
-	"github.com/shopspring/decimal"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 type ExchangeTest struct {
@@ -43,7 +44,7 @@ func TestInMemoryExchangeManager_CalculateExchange(t *testing.T) {
 	for idx, data := range testData {
 		result, err := exchangeManager.CalculateExchange(ctx, data.from, data.to, data.fromAmount)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err.Error())
 			t.Fail()
 		}
 		if result.InexactFloat64() != data.toAmount.InexactFloat64() {
@@ -56,7 +57,7 @@ func TestInMemoryExchangeManager_CalculateExchange(t *testing.T) {
 	for idx, data := range testData {
 		result, err := exchangeManager.CalculateExchange(ctx, data.from, data.to, data.fromAmount)
 		if err != nil {
-			t.Errorf(err.Error())
+			t.Error(err.Error())
 			t.Fail()
 		}
 		if result.InexactFloat64() != data.toAmount.InexactFloat64() {

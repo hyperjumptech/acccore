@@ -1,7 +1,6 @@
 package acccore
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -146,55 +145,55 @@ func TestPageResultFor(t *testing.T) {
 		}
 		pr := PageResultFor(req, tst.TotalResultSet)
 		if pr.IsLast != tst.IsLast {
-			t.Error(fmt.Sprintf("#%d : Expect IsLast %v but %v", i, tst.IsLast, pr.IsLast))
+			t.Errorf("#%d : Expect IsLast %v but %v", i, tst.IsLast, pr.IsLast)
 			t.FailNow()
 		}
 		if pr.IsFirst != tst.IsFirst {
-			t.Error(fmt.Sprintf("#%d : Expect IsFirst %v but %v", i, tst.IsFirst, pr.IsFirst))
+			t.Errorf("#%d : Expect IsFirst %v but %v", i, tst.IsFirst, pr.IsFirst)
 			t.FailNow()
 		}
 		if pr.HavePrev != tst.HavePrev {
-			t.Error(fmt.Sprintf("#%d : Expect HavePrev %v but %v", i, tst.HavePrev, pr.HavePrev))
+			t.Errorf("#%d : Expect HavePrev %v but %v", i, tst.HavePrev, pr.HavePrev)
 			t.FailNow()
 		}
 		if pr.HaveNext != tst.HaveNext {
-			t.Error(fmt.Sprintf("#%d : Expect HaveNext %v but %v", i, tst.HaveNext, pr.HaveNext))
+			t.Errorf("#%d : Expect HaveNext %v but %v", i, tst.HaveNext, pr.HaveNext)
 			t.FailNow()
 		}
 		if pr.TotalEntries != tst.TotalEntries {
-			t.Error(fmt.Sprintf("#%d : Expect TotalEntries %v but %v", i, tst.TotalEntries, pr.TotalEntries))
+			t.Errorf("#%d : Expect TotalEntries %v but %v", i, tst.TotalEntries, pr.TotalEntries)
 			t.FailNow()
 		}
 		if pr.PageSize != tst.PageSize {
-			t.Error(fmt.Sprintf("#%d : Expect PageSize %v but %v", i, tst.PageSize, pr.PageSize))
+			t.Errorf("#%d : Expect PageSize %v but %v", i, tst.PageSize, pr.PageSize)
 			t.FailNow()
 		}
 		if pr.Page != tst.Page {
-			t.Error(fmt.Sprintf("#%d : Expect Page %v but %v", i, tst.Page, pr.Page))
+			t.Errorf("#%d : Expect Page %v but %v", i, tst.Page, pr.Page)
 			t.FailNow()
 		}
 		if pr.Offset != tst.Offset {
-			t.Error(fmt.Sprintf("#%d : Expect Offset %v but %v", i, tst.Offset, pr.Offset))
+			t.Errorf("#%d : Expect Offset %v but %v", i, tst.Offset, pr.Offset)
 			t.FailNow()
 		}
 		if pr.LastPage != tst.LastPage {
-			t.Error(fmt.Sprintf("#%d : Expect LastPage %v but %v", i, tst.LastPage, pr.LastPage))
+			t.Errorf("#%d : Expect LastPage %v but %v", i, tst.LastPage, pr.LastPage)
 			t.FailNow()
 		}
 		if pr.FirstPage != tst.FirstPage {
-			t.Error(fmt.Sprintf("#%d : Expect FirstPage %v but %v", i, tst.FirstPage, pr.FirstPage))
+			t.Errorf("#%d : Expect FirstPage %v but %v", i, tst.FirstPage, pr.FirstPage)
 			t.FailNow()
 		}
 		if pr.NextPage != tst.NextPage {
-			t.Error(fmt.Sprintf("#%d : Expect NextPage %v but %v", i, tst.NextPage, pr.NextPage))
+			t.Errorf("#%d : Expect NextPage %v but %v", i, tst.NextPage, pr.NextPage)
 			t.FailNow()
 		}
 		if pr.PreviousPage != tst.PreviousPage {
-			t.Error(fmt.Sprintf("#%d : Expect PreviousPage %v but %v", i, tst.PreviousPage, pr.PreviousPage))
+			t.Errorf("#%d : Expect PreviousPage %v but %v", i, tst.PreviousPage, pr.PreviousPage)
 			t.FailNow()
 		}
 		if pr.TotalPages != tst.TotalPages {
-			t.Error(fmt.Sprintf("#%d : Expect TotalPages %v but %v", i, tst.TotalPages, pr.TotalPages))
+			t.Errorf("#%d : Expect TotalPages %v but %v", i, tst.TotalPages, pr.TotalPages)
 			t.FailNow()
 		}
 	}
